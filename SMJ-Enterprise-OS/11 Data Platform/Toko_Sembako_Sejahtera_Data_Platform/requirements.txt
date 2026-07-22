@@ -1,0 +1,8 @@
+# SBGA Data Platform - Python dependencies
+# Python 3.13
+
+pandas>=2.2
+duckdb>=1.0        # Step 9 target - analytics warehouse layer (not yet populated)
+python-dateutil>=2.9
+
+# sqlite3 is part of the Python standard library - no package needed

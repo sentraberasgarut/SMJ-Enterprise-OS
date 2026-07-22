@@ -1,0 +1,5 @@
+2026-07-22 03:57:42,022 INFO Removed existing /home/claude/SBGA_Data_Platform/database/sbga.db for full-refresh reload
+2026-07-22 03:57:42,157 INFO Schema created from database/schema.sql (FK enforcement deferred to explicit post-load check)
+2026-07-22 03:57:42,250 INFO Import complete.
+2026-07-22 03:57:42,251 WARNING 75 foreign key violations found (real orphans - see reports/data_quality_report.md)
+2026-07-22 03:57:42,251 INFO Wrote /home/claude/SBGA_Data_Platform/reports/import_report.md
