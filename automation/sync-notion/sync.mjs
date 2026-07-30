@@ -8,14 +8,17 @@
  *
  * Butuh env NOTION_TOKEN (kecuali --dry-run).
  *
- * PENTING: script ini MENIMPA isi halaman Notion target. Semua blok anak
- * dihapus lalu ditulis ulang. Jangan pernah arahkan ke halaman yang diedit manual.
+ * PENTING: script ini MENIMPA isi halaman Notion target. Jangan pernah
+ * arahkan ke halaman yang diedit manual.
  *
- * Batasan converter yang diketahui:
- *   - Heading Notion hanya h1-h3. `####` dan lebih dalam dipetakan ke h3 + tebal.
- *   - Tabel Markdown diubah ke tabel Notion. Baris pemisah (|---|) diabaikan.
- *   - Nested list lebih dari 1 tingkat diratakan.
- *   - HTML mentah di Markdown diperlakukan sebagai teks biasa.
+ * URUTAN OPERASI (v2 - penting):
+ *   1. Catat id blok lama
+ *   2. TULIS blok baru
+ *   3. Baru HAPUS blok lama
+ *
+ * Urutan ini dipilih setelah bug 30 Jul 2026: versi lama menghapus dulu,
+ * lalu gagal menulis, dan meninggalkan halaman BLANK. Dengan urutan ini,
+ * kegagalan menulis tidak merusak apa pun - isi lama tetap ada.
  */
 
 import { readFile } from 'node:fs/promises';
@@ -35,7 +38,7 @@ let NOTION_VERSION = '2022-06-28';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function log(level, msg) {
-  const tag = { info: 'INFO ', warn: 'WARN ', err: 'ERROR', ok: 'OK   ' }[level] ?? '     ';
+  const tag = { info: 'INFO ', warn: 'WARN ', err: 'ERROR', ok: 'OK   ', dbg: 'DEBUG' }[level] ?? '     ';
   console.log(`[${tag}] ${msg}`);
 }
 
@@ -59,7 +62,9 @@ async function notion(path, options = {}) {
 
   const body = await res.text();
   if (!res.ok) {
-    throw new Error(`Notion ${options.method ?? 'GET'} ${path} -> ${res.status}: ${body}`);
+    const err = new Error(`Notion ${options.method ?? 'GET'} ${path} -> ${res.status}: ${body}`);
+    err.status = res.status;
+    throw err;
   }
   return body ? JSON.parse(body) : {};
 }
@@ -70,10 +75,13 @@ const MAX_TEXT = 1900; // batas Notion 2000, sisakan ruang
 
 /**
  * Parse inline markdown: **bold**, *italic*, `code`, [teks](url).
- * Sengaja sederhana dan tidak rekursif — cukup untuk dokumen di repo ini.
+ * Sengaja sederhana dan tidak rekursif - cukup untuk dokumen di repo ini.
  */
 function richText(raw) {
-  if (!raw) return [];
+  if (raw === undefined || raw === null) return [];
+  const s = String(raw);
+  if (!s) return [];
+
   const out = [];
   // Urutan penting: code dulu supaya isinya tidak diproses lagi.
   const pattern = /(`[^`]+`)|(\*\*[^*]+\*\*)|(\[[^\]]+\]\([^)]+\))|(\*[^*]+\*)/g;
@@ -91,8 +99,8 @@ function richText(raw) {
     }
   };
 
-  while ((m = pattern.exec(raw)) !== null) {
-    push(raw.slice(last, m.index));
+  while ((m = pattern.exec(s)) !== null) {
+    push(s.slice(last, m.index));
     const t = m[0];
     if (m[1]) push(t.slice(1, -1), { code: true });
     else if (m[2]) push(t.slice(2, -2), { bold: true });
@@ -105,13 +113,35 @@ function richText(raw) {
     } else if (m[4]) push(t.slice(1, -1), { italic: true });
     last = m.index + t.length;
   }
-  push(raw.slice(last));
+  push(s.slice(last));
+
+  // Notion menolak rich_text kosong pada beberapa konteks - kirim string kosong.
+  if (!out.length) out.push({ type: 'text', text: { content: '', link: null } });
   return out;
+}
+
+/** Ambil teks polos dari sebuah blok, untuk fallback paragraf. */
+function blockToPlainText(b) {
+  const t = b[b.type];
+  if (!t) return `[blok ${b.type} tidak bisa dikonversi]`;
+  if (Array.isArray(t.rich_text)) {
+    return t.rich_text.map((r) => r.text?.content ?? '').join('');
+  }
+  if (b.type === 'table' && Array.isArray(t.children)) {
+    return t.children
+      .map((row) => (row.table_row?.cells ?? [])
+        .map((cell) => cell.map((r) => r.text?.content ?? '').join(''))
+        .join(' | '))
+      .join('\n');
+  }
+  return `[blok ${b.type}]`;
 }
 
 // ------------------------------------------------- markdown -> blocks
 
 const block = (type, value) => ({ object: 'block', type, [type]: value });
+
+const MAX_TABLE_COLS = 20; // batas praktis; tabel lebih lebar diturunkan jadi teks
 
 function splitTableRow(line) {
   return line
@@ -123,16 +153,51 @@ function splitTableRow(line) {
 
 const isTableSeparator = (line) => /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(line) && line.includes('-');
 
+/**
+ * Bangun blok tabel Notion dengan pengerasan:
+ *   - baris header yang seluruhnya kosong dibuang (has_column_header = false)
+ *   - jumlah kolom dinormalkan ke lebar maksimum
+ *   - lebar di luar 1..MAX_TABLE_COLS -> tabel diturunkan jadi baris teks
+ */
+function buildTable(rows) {
+  let hasHeader = true;
+  if (rows.length && rows[0].every((c) => c === '')) {
+    rows = rows.slice(1);
+    hasHeader = false;
+  }
+  if (!rows.length) return null;
+
+  const width = Math.max(...rows.map((r) => r.length));
+  if (width < 1 || width > MAX_TABLE_COLS) {
+    // Terlalu lebar untuk tabel Notion yang nyaman - jadikan daftar teks.
+    return rows.map((r) => block('paragraph', { rich_text: richText(r.join(' | ')) }));
+  }
+
+  return block('table', {
+    table_width: width,
+    has_column_header: hasHeader,
+    has_row_header: false,
+    children: rows.map((r) => block('table_row', {
+      cells: Array.from({ length: width }, (_, c) => richText(r[c] ?? '')),
+    })),
+  });
+}
+
 function markdownToBlocks(md) {
   const lines = md.replace(/\r\n/g, '\n').split('\n');
   const blocks = [];
   let i = 0;
 
+  const push = (b) => {
+    if (!b) return;
+    if (Array.isArray(b)) blocks.push(...b);
+    else blocks.push(b);
+  };
+
   while (i < lines.length) {
     const line = lines[i];
     const trimmed = line.trim();
 
-    // baris kosong
     if (!trimmed) { i++; continue; }
 
     // code fence
@@ -141,8 +206,8 @@ function markdownToBlocks(md) {
       const body = [];
       i++;
       while (i < lines.length && !lines[i].trim().startsWith('```')) body.push(lines[i++]);
-      i++; // tutup fence
-      blocks.push(block('code', {
+      i++;
+      push(block('code', {
         language: normaliseLang(lang),
         rich_text: [{ type: 'text', text: { content: body.join('\n').slice(0, MAX_TEXT) } }],
       }));
@@ -151,7 +216,7 @@ function markdownToBlocks(md) {
 
     // divider
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
-      blocks.push(block('divider', {}));
+      push(block('divider', {}));
       i++;
       continue;
     }
@@ -159,21 +224,13 @@ function markdownToBlocks(md) {
     // tabel
     if (trimmed.startsWith('|') && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
       const header = splitTableRow(lines[i]);
-      i += 2; // lewati header + separator
+      i += 2;
       const rows = [header];
       while (i < lines.length && lines[i].trim().startsWith('|')) {
         rows.push(splitTableRow(lines[i]));
         i++;
       }
-      const width = Math.max(...rows.map((r) => r.length));
-      blocks.push(block('table', {
-        table_width: width,
-        has_column_header: true,
-        has_row_header: false,
-        children: rows.map((r) => block('table_row', {
-          cells: Array.from({ length: width }, (_, c) => richText(r[c] ?? '')),
-        })),
-      }));
+      push(buildTable(rows));
       continue;
     }
 
@@ -182,49 +239,41 @@ function markdownToBlocks(md) {
     if (h) {
       const depth = h[1].length;
       const text = h[2];
-      if (depth <= 3) {
-        blocks.push(block(`heading_${depth}`, { rich_text: richText(text) }));
-      } else {
-        blocks.push(block('heading_3', { rich_text: richText(`**${text}**`) }));
-      }
+      if (depth <= 3) push(block(`heading_${depth}`, { rich_text: richText(text) }));
+      else push(block('heading_3', { rich_text: richText(`**${text}**`) }));
       i++;
       continue;
     }
 
-    // quote / callout
+    // quote
     if (trimmed.startsWith('>')) {
       const body = [];
       while (i < lines.length && lines[i].trim().startsWith('>')) {
         body.push(lines[i].trim().replace(/^>\s?/, ''));
         i++;
       }
-      blocks.push(block('quote', { rich_text: richText(body.join(' ').trim()) }));
+      push(block('quote', { rich_text: richText(body.join(' ').trim()) }));
       continue;
     }
 
     // bulleted list
     if (/^[-*+]\s+/.test(trimmed)) {
-      blocks.push(block('bulleted_list_item', {
-        rich_text: richText(trimmed.replace(/^[-*+]\s+/, '')),
-      }));
+      push(block('bulleted_list_item', { rich_text: richText(trimmed.replace(/^[-*+]\s+/, '')) }));
       i++;
       continue;
     }
 
     // numbered list
     if (/^\d+[.)]\s+/.test(trimmed)) {
-      blocks.push(block('numbered_list_item', {
-        rich_text: richText(trimmed.replace(/^\d+[.)]\s+/, '')),
-      }));
+      push(block('numbered_list_item', { rich_text: richText(trimmed.replace(/^\d+[.)]\s+/, '')) }));
       i++;
       continue;
     }
 
-    // paragraf: gabungkan baris sampai baris kosong / blok baru
+    // paragraf
     const para = [];
     while (i < lines.length) {
-      const l = lines[i];
-      const t = l.trim();
+      const t = lines[i].trim();
       if (!t) break;
       if (/^(#{1,6})\s/.test(t) || t.startsWith('>') || t.startsWith('```')
         || t.startsWith('|') || /^[-*+]\s/.test(t) || /^\d+[.)]\s/.test(t)
@@ -232,7 +281,7 @@ function markdownToBlocks(md) {
       para.push(t);
       i++;
     }
-    blocks.push(block('paragraph', { rich_text: richText(para.join(' ')) }));
+    push(block('paragraph', { rich_text: richText(para.join(' ')) }));
   }
 
   return blocks;
@@ -252,7 +301,7 @@ function normaliseLang(lang) {
 
 // ------------------------------------------------------ operasi Notion
 
-async function clearPage(pageId) {
+async function listChildIds(pageId) {
   let cursor;
   const ids = [];
   do {
@@ -262,22 +311,73 @@ async function clearPage(pageId) {
     ids.push(...res.results.map((b) => b.id));
     cursor = res.has_more ? res.next_cursor : null;
   } while (cursor);
-
-  for (const id of ids) {
-    await notion(`/blocks/${id}`, { method: 'DELETE' });
-    await sleep(120); // hormati batas ~3 req/s
-  }
-  return ids.length;
+  return ids;
 }
 
-async function appendBlocks(pageId, blocks) {
-  for (let i = 0; i < blocks.length; i += 100) {
-    await notion(`/blocks/${pageId}/children`, {
-      method: 'PATCH',
-      body: JSON.stringify({ children: blocks.slice(i, i + 100) }),
-    });
-    await sleep(150);
+async function deleteBlocks(ids) {
+  let removed = 0;
+  for (const id of ids) {
+    try {
+      await notion(`/blocks/${id}`, { method: 'DELETE' });
+      removed++;
+    } catch (err) {
+      log('warn', `gagal hapus blok ${id}: ${err.message.slice(0, 120)}`);
+    }
+    await sleep(120); // hormati batas ~3 req/s
   }
+  return removed;
+}
+
+/**
+ * Tulis blok, dengan isolasi kegagalan.
+ * Kalau satu chunk ditolak, retry per blok untuk menemukan yang bermasalah,
+ * lalu turunkan blok itu jadi paragraf biasa supaya sisanya tetap masuk.
+ */
+async function appendBlocks(pageId, blocks) {
+  let written = 0;
+  let degraded = 0;
+
+  for (let i = 0; i < blocks.length; i += 100) {
+    const chunk = blocks.slice(i, i + 100);
+    try {
+      await notion(`/blocks/${pageId}/children`, {
+        method: 'PATCH',
+        body: JSON.stringify({ children: chunk }),
+      });
+      written += chunk.length;
+      await sleep(150);
+    } catch (err) {
+      log('warn', `chunk blok ${i}-${i + chunk.length - 1} ditolak, isolasi per blok...`);
+      for (let j = 0; j < chunk.length; j++) {
+        const b = chunk[j];
+        try {
+          await notion(`/blocks/${pageId}/children`, {
+            method: 'PATCH',
+            body: JSON.stringify({ children: [b] }),
+          });
+          written++;
+        } catch (e2) {
+          log('err', `blok #${i + j} tipe "${b.type}" ditolak: ${e2.message.slice(0, 300)}`);
+          // Fallback: turunkan jadi paragraf teks polos.
+          try {
+            await notion(`/blocks/${pageId}/children`, {
+              method: 'PATCH',
+              body: JSON.stringify({
+                children: [block('paragraph', { rich_text: richText(blockToPlainText(b)) })],
+              }),
+            });
+            written++;
+            degraded++;
+          } catch (e3) {
+            log('err', `fallback paragraf untuk blok #${i + j} juga gagal: ${e3.message.slice(0, 200)}`);
+          }
+        }
+        await sleep(150);
+      }
+    }
+  }
+
+  return { written, degraded };
 }
 
 // ------------------------------------------------------------------ main
@@ -287,7 +387,7 @@ async function main() {
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
   if (manifest.notionVersion) NOTION_VERSION = manifest.notionVersion;
 
-  if (DRY_RUN) log('info', 'MODE DRY-RUN — tidak ada yang ditulis ke Notion');
+  if (DRY_RUN) log('info', 'MODE DRY-RUN - tidak ada yang ditulis ke Notion');
   else if (!TOKEN) {
     log('err', 'NOTION_TOKEN tidak ada. Set repository secret NOTION_TOKEN, atau jalankan dengan --dry-run.');
     process.exit(1);
@@ -314,20 +414,39 @@ async function main() {
       const md = await readFile(join(REPO_ROOT, target.file), 'utf8');
       const blocks = markdownToBlocks(md);
 
-      if (!blocks.length) throw new Error('konversi menghasilkan 0 blok — kemungkinan file kosong');
+      if (!blocks.length) throw new Error('konversi menghasilkan 0 blok - kemungkinan file kosong');
 
       if (DRY_RUN) {
         const counts = blocks.reduce((a, b) => ({ ...a, [b.type]: (a[b.type] ?? 0) + 1 }), {});
-        log('ok', `${label} — ${blocks.length} blok: ${JSON.stringify(counts)}`);
+        log('ok', `${label} - ${blocks.length} blok: ${JSON.stringify(counts)}`);
         continue;
       }
 
-      const removed = await clearPage(target.pageId);
-      await appendBlocks(target.pageId, blocks);
-      log('ok', `${label} — ${removed} blok lama dihapus, ${blocks.length} blok baru ditulis`);
+      // 1. Catat blok lama SEBELUM menulis apa pun.
+      const oldIds = await listChildIds(target.pageId);
+      log('info', `${label} - ${oldIds.length} blok lama tercatat, menulis ${blocks.length} blok baru...`);
+
+      // 2. Tulis blok baru DULU. Kalau ini gagal, isi lama masih utuh.
+      const { written, degraded } = await appendBlocks(target.pageId, blocks);
+
+      if (written === 0) {
+        throw new Error('nol blok berhasil ditulis - isi lama TIDAK dihapus, halaman tetap utuh');
+      }
+
+      // 3. Baru hapus blok lama.
+      const removed = await deleteBlocks(oldIds);
+
+      // 4. Verifikasi pasca-tulis.
+      const finalCount = (await listChildIds(target.pageId)).length;
+      if (finalCount === 0) {
+        throw new Error('VERIFIKASI GAGAL: halaman kosong setelah sync');
+      }
+
+      const note = degraded ? ` (${degraded} blok diturunkan jadi paragraf)` : '';
+      log('ok', `${label} - ${written} blok ditulis, ${removed} blok lama dihapus, ${finalCount} blok final${note}`);
     } catch (err) {
       failed++;
-      log('err', `${label} — ${err.message}`);
+      log('err', `${label} - ${err.message}`);
     }
   }
 
