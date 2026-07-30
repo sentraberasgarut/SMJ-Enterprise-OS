@@ -3,10 +3,12 @@
 | | |
 | --- | --- |
 | **Aktif** | [v6 — 30 Jul 2026](v6-2026-07-30.md) |
-| **Adendum berlaku** | [Adendum 1 — Rencana Eksekusi Paralel (30 Jul, sore)](../ops/rencana-eksekusi-paralel.md) |
+| **Adendum berlaku** | [Adendum 1 — Rencana Eksekusi Paralel (30 Jul, sore)](../ops/rencana-eksekusi-paralel.md) · [Adendum 2 — Kanal B2C & Koreksi Arah (30 Jul, malam)](../ops/adendum-2-kanal-b2c-dan-koreksi-arah.md) |
 | **Sebelumnya** | v5 (28 Jul 2026) — tetap di Notion, tidak diduplikasi ke repo karena aturan *freeze dokumen* |
 
-> ⚠️ **Baca v6 bersama Adendum 1.** Adendum memperbaiki tiga hal di v6: pemilik keputusan Central Kitchen, metrik utama funnel, dan status selisih tutup shift 27 Jul. Kalau keduanya bertentangan, **Adendum yang berlaku.**
+> ⚠️ **Baca v6 bersama kedua adendum.** Adendum 1 memperbaiki pemilik keputusan Central Kitchen, metrik utama funnel, dan status selisih tutup shift 27 Jul. Adendum 2 menetapkan cakupan B2C dan peran per kanal, serta **membuka kembali satu konflik arah B2B yang menunggu keputusan CEO**. Kalau bertentangan dengan v6, **adendum yang berlaku.**
+
+> 🔴 **Dua adendum terpakai dari tiga.** Satu adendum lagi dan badan v6 dianggap tidak akurat — siapkan v7.
 
 **Hanya boleh ada satu roadmap aktif di folder ini.** CI (`automation/validate.mjs`) akan gagal kalau ada lebih dari satu file `.md` selain README. Versi lama dipindahkan ke `roadmap/archive/`.
 
