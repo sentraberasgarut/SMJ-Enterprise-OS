@@ -1,0 +1,53 @@
+name: Sync ke Notion
+
+# Mirror SATU ARAH: repo -> Notion. Halaman Notion target akan DITIMPA.
+# Butuh repository secret NOTION_TOKEN (lihat README, bagian Langkah manual).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'roadmap/**'
+      - 'ops/**'
+      - 'adr/**'
+      - 'docs/**'
+      - 'automation/sync-notion/**'
+  schedule:
+    # 06:00 WIB = 23:00 UTC hari sebelumnya. Jaring aman kalau ada push yang gagal.
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Jalankan tanpa menulis ke Notion'
+        type: boolean
+        default: false
+
+concurrency:
+  group: sync-notion
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validasi dulu sebelum menyentuh Notion
+        run: node automation/validate.mjs
+
+      - name: Sync
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            node automation/sync-notion/sync.mjs --dry-run
+          elif [ -z "$NOTION_TOKEN" ]; then
+            echo "::warning::NOTION_TOKEN belum diset — jalan sebagai dry-run. Lihat README bagian Langkah manual."
+            node automation/sync-notion/sync.mjs --dry-run
+          else
+            node automation/sync-notion/sync.mjs
+          fi

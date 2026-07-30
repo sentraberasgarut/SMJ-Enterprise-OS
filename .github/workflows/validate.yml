@@ -1,0 +1,23 @@
+name: Validate repo
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cek konsistensi repo
+        run: node automation/validate.mjs
+
+      - name: Cek konversi Markdown -> Notion (dry-run, tanpa token)
+        run: node automation/sync-notion/sync.mjs --dry-run
