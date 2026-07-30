@@ -1,10 +1,11 @@
 {
-  "_comment": "Peta file repo -> halaman Notion. Sync SATU ARAH: repo menimpa Notion. Isi pageId setelah halaman mirror dibuat di Notion dan di-share ke integration 'SMJ Repo Sync'.",
+  "_comment": "Peta file repo -> halaman Notion. Sync SATU ARAH: repo menimpa Notion. Set enabled: true HANYA setelah NOTION_TOKEN ada dan dry-run sudah dicek.",
+  "_peringatan": "Halaman mirror Roadmap v6 saat ini berisi versi RINGKAS yang ditulis manual untuk dibaca di HP. Menyalakan enabled: true akan MENGGANTINYA dengan isi lengkap file Markdown (jauh lebih panjang). Itu perilaku yang diinginkan, tapi pastikan Anda memang mau versi panjang di HP.",
   "notionVersion": "2022-06-28",
   "targets": [
     {
       "file": "roadmap/v6-2026-07-30.md",
-      "pageId": "",
+      "pageId": "3ad2a394-6232-81d8-bf79-d2bc2a54af4c",
       "title": "16 Roadmap v6 — Integrasi Operasional & Funnel",
       "enabled": false
     },
