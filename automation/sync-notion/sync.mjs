@@ -11,14 +11,15 @@
  * PENTING: script ini MENIMPA isi halaman Notion target. Jangan pernah
  * arahkan ke halaman yang diedit manual.
  *
- * URUTAN OPERASI (v2 - penting):
- *   1. Catat id blok lama
- *   2. TULIS blok baru
- *   3. Baru HAPUS blok lama
+ * URUTAN OPERASI (penting):
+ *   1. Preflight - GET halaman, pastikan ada dan bisa diakses
+ *   2. Catat id blok lama
+ *   3. TULIS blok baru
+ *   4. Baru HAPUS blok lama
  *
- * Urutan ini dipilih setelah bug 30 Jul 2026: versi lama menghapus dulu,
+ * Urutan ini dipilih setelah bug 30 Jul 2026: versi pertama menghapus dulu,
  * lalu gagal menulis, dan meninggalkan halaman BLANK. Dengan urutan ini,
- * kegagalan menulis tidak merusak apa pun - isi lama tetap ada.
+ * kegagalan menulis tidak merusak apa pun.
  */
 
 import { readFile } from 'node:fs/promises';
@@ -38,8 +39,38 @@ let NOTION_VERSION = '2022-06-28';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function log(level, msg) {
-  const tag = { info: 'INFO ', warn: 'WARN ', err: 'ERROR', ok: 'OK   ', dbg: 'DEBUG' }[level] ?? '     ';
+  const tag = { info: 'INFO ', warn: 'WARN ', err: 'ERROR', ok: 'OK   ' }[level] ?? '     ';
   console.log(`[${tag}] ${msg}`);
+}
+
+const pageUrl = (id) => `https://www.notion.so/${String(id).replace(/-/g, '')}`;
+
+/** Error izin dari Notion - butuh tindakan manusia, tidak ada gunanya retry. */
+class PermissionError extends Error {
+  constructor(pageId, detail) {
+    super(
+      `Notion menolak akses (403 restricted_resource) ke halaman ${pageId}\n`
+      + `\n`
+      + `        Token sampai ke Notion, tapi integration TIDAK punya izin EDIT.\n`
+      + `        Ini bukan masalah kode - butuh dua hal diperiksa manual:\n`
+      + `\n`
+      + `        1. CAPABILITIES integration:\n`
+      + `           https://www.notion.so/profile/integrations\n`
+      + `           Buka "SMJ Repo Sync" -> Configuration -> Capabilities\n`
+      + `           WAJIB tercentang: "Read content" DAN "Update content"\n`
+      + `           Hanya "Read content" = 403 persis seperti ini.\n`
+      + `\n`
+      + `        2. AKSES ke halaman:\n`
+      + `           ${pageUrl(pageId)}\n`
+      + `           Buka halaman INDUK "SMJ Enterprise OS" -> tombol ... (kanan atas)\n`
+      + `           -> Connections -> sambungkan "SMJ Repo Sync"\n`
+      + `           Halaman anak otomatis mewarisi akses, jadi cukup sekali di induk.\n`
+      + `\n`
+      + `        Detail dari Notion: ${detail}`,
+    );
+    this.name = 'PermissionError';
+    this.isPermission = true;
+  }
 }
 
 async function notion(path, options = {}) {
@@ -62,28 +93,36 @@ async function notion(path, options = {}) {
 
   const body = await res.text();
   if (!res.ok) {
-    const err = new Error(`Notion ${options.method ?? 'GET'} ${path} -> ${res.status}: ${body}`);
+    let code = '';
+    let message = body;
+    try {
+      const parsed = JSON.parse(body);
+      code = parsed.code ?? '';
+      message = parsed.message ?? body;
+    } catch { /* body bukan JSON, pakai apa adanya */ }
+
+    const err = new Error(`Notion ${options.method ?? 'GET'} ${path} -> ${res.status} ${code}: ${message}`);
     err.status = res.status;
+    err.code = code;
+    err.notionMessage = message;
     throw err;
   }
   return body ? JSON.parse(body) : {};
 }
 
+const isPermissionIssue = (err) => err.status === 403 || err.code === 'restricted_resource'
+  || err.code === 'unauthorized' || err.code === 'insufficient_permissions';
+
 // -------------------------------------------------- inline -> rich_text
 
 const MAX_TEXT = 1900; // batas Notion 2000, sisakan ruang
 
-/**
- * Parse inline markdown: **bold**, *italic*, `code`, [teks](url).
- * Sengaja sederhana dan tidak rekursif - cukup untuk dokumen di repo ini.
- */
 function richText(raw) {
   if (raw === undefined || raw === null) return [];
   const s = String(raw);
-  if (!s) return [];
+  if (!s) return [{ type: 'text', text: { content: '', link: null } }];
 
   const out = [];
-  // Urutan penting: code dulu supaya isinya tidak diproses lagi.
   const pattern = /(`[^`]+`)|(\*\*[^*]+\*\*)|(\[[^\]]+\]\([^)]+\))|(\*[^*]+\*)/g;
   let last = 0;
   let m;
@@ -107,7 +146,6 @@ function richText(raw) {
     else if (m[3]) {
       const mm = t.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
       const url = mm[2].trim();
-      // Notion menolak link relatif. Link internal repo jadi teks biasa.
       if (/^https?:\/\//.test(url)) push(mm[1], {}, url);
       else push(`${mm[1]} (${url})`);
     } else if (m[4]) push(t.slice(1, -1), { italic: true });
@@ -115,18 +153,14 @@ function richText(raw) {
   }
   push(s.slice(last));
 
-  // Notion menolak rich_text kosong pada beberapa konteks - kirim string kosong.
   if (!out.length) out.push({ type: 'text', text: { content: '', link: null } });
   return out;
 }
 
-/** Ambil teks polos dari sebuah blok, untuk fallback paragraf. */
 function blockToPlainText(b) {
   const t = b[b.type];
   if (!t) return `[blok ${b.type} tidak bisa dikonversi]`;
-  if (Array.isArray(t.rich_text)) {
-    return t.rich_text.map((r) => r.text?.content ?? '').join('');
-  }
+  if (Array.isArray(t.rich_text)) return t.rich_text.map((r) => r.text?.content ?? '').join('');
   if (b.type === 'table' && Array.isArray(t.children)) {
     return t.children
       .map((row) => (row.table_row?.cells ?? [])
@@ -141,24 +175,14 @@ function blockToPlainText(b) {
 
 const block = (type, value) => ({ object: 'block', type, [type]: value });
 
-const MAX_TABLE_COLS = 20; // batas praktis; tabel lebih lebar diturunkan jadi teks
+const MAX_TABLE_COLS = 20;
 
 function splitTableRow(line) {
-  return line
-    .replace(/^\s*\|/, '')
-    .replace(/\|\s*$/, '')
-    .split('|')
-    .map((c) => c.trim());
+  return line.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').map((c) => c.trim());
 }
 
 const isTableSeparator = (line) => /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(line) && line.includes('-');
 
-/**
- * Bangun blok tabel Notion dengan pengerasan:
- *   - baris header yang seluruhnya kosong dibuang (has_column_header = false)
- *   - jumlah kolom dinormalkan ke lebar maksimum
- *   - lebar di luar 1..MAX_TABLE_COLS -> tabel diturunkan jadi baris teks
- */
 function buildTable(rows) {
   let hasHeader = true;
   if (rows.length && rows[0].every((c) => c === '')) {
@@ -169,7 +193,6 @@ function buildTable(rows) {
 
   const width = Math.max(...rows.map((r) => r.length));
   if (width < 1 || width > MAX_TABLE_COLS) {
-    // Terlalu lebar untuk tabel Notion yang nyaman - jadikan daftar teks.
     return rows.map((r) => block('paragraph', { rich_text: richText(r.join(' | ')) }));
   }
 
@@ -195,12 +218,9 @@ function markdownToBlocks(md) {
   };
 
   while (i < lines.length) {
-    const line = lines[i];
-    const trimmed = line.trim();
-
+    const trimmed = lines[i].trim();
     if (!trimmed) { i++; continue; }
 
-    // code fence
     if (trimmed.startsWith('```')) {
       const lang = trimmed.slice(3).trim() || 'plain text';
       const body = [];
@@ -214,14 +234,12 @@ function markdownToBlocks(md) {
       continue;
     }
 
-    // divider
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
       push(block('divider', {}));
       i++;
       continue;
     }
 
-    // tabel
     if (trimmed.startsWith('|') && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
       const header = splitTableRow(lines[i]);
       i += 2;
@@ -234,18 +252,15 @@ function markdownToBlocks(md) {
       continue;
     }
 
-    // heading
     const h = trimmed.match(/^(#{1,6})\s+(.*)$/);
     if (h) {
       const depth = h[1].length;
-      const text = h[2];
-      if (depth <= 3) push(block(`heading_${depth}`, { rich_text: richText(text) }));
-      else push(block('heading_3', { rich_text: richText(`**${text}**`) }));
+      if (depth <= 3) push(block(`heading_${depth}`, { rich_text: richText(h[2]) }));
+      else push(block('heading_3', { rich_text: richText(`**${h[2]}**`) }));
       i++;
       continue;
     }
 
-    // quote
     if (trimmed.startsWith('>')) {
       const body = [];
       while (i < lines.length && lines[i].trim().startsWith('>')) {
@@ -256,21 +271,18 @@ function markdownToBlocks(md) {
       continue;
     }
 
-    // bulleted list
     if (/^[-*+]\s+/.test(trimmed)) {
       push(block('bulleted_list_item', { rich_text: richText(trimmed.replace(/^[-*+]\s+/, '')) }));
       i++;
       continue;
     }
 
-    // numbered list
     if (/^\d+[.)]\s+/.test(trimmed)) {
       push(block('numbered_list_item', { rich_text: richText(trimmed.replace(/^\d+[.)]\s+/, '')) }));
       i++;
       continue;
     }
 
-    // paragraf
     const para = [];
     while (i < lines.length) {
       const t = lines[i].trim();
@@ -301,6 +313,36 @@ function normaliseLang(lang) {
 
 // ------------------------------------------------------ operasi Notion
 
+/**
+ * Preflight: pastikan halaman ada dan bisa diakses SEBELUM menyentuh apa pun.
+ * Membedakan dengan jelas antara "tidak ditemukan / belum di-share" dan
+ * "ditemukan tapi tidak punya izin".
+ */
+async function preflight(pageId) {
+  try {
+    const page = await notion(`/pages/${pageId}`);
+    if (page.archived) throw new Error(`halaman ${pageId} sudah diarsipkan di Notion - pulihkan dulu`);
+    return true;
+  } catch (err) {
+    if (err.code === 'object_not_found') {
+      throw new Error(
+        `Halaman ${pageId} tidak ditemukan oleh integration.\n`
+        + `\n`
+        + `        Halamannya mungkin ada, tapi integration tidak bisa melihatnya.\n`
+        + `        Notion menyembunyikan halaman yang belum di-share ke integration.\n`
+        + `\n`
+        + `        Perbaikan: buka halaman INDUK "SMJ Enterprise OS"\n`
+        + `        -> tombol ... (kanan atas) -> Connections -> sambungkan "SMJ Repo Sync"\n`
+        + `        Halaman anak otomatis mewarisi akses.\n`
+        + `\n`
+        + `        Halaman ini: ${pageUrl(pageId)}`,
+      );
+    }
+    if (isPermissionIssue(err)) throw new PermissionError(pageId, err.notionMessage ?? err.message);
+    throw err;
+  }
+}
+
 async function listChildIds(pageId) {
   let cursor;
   const ids = [];
@@ -321,17 +363,16 @@ async function deleteBlocks(ids) {
       await notion(`/blocks/${id}`, { method: 'DELETE' });
       removed++;
     } catch (err) {
-      log('warn', `gagal hapus blok ${id}: ${err.message.slice(0, 120)}`);
+      log('warn', `gagal hapus blok ${id}: ${(err.notionMessage ?? err.message).slice(0, 120)}`);
     }
-    await sleep(120); // hormati batas ~3 req/s
+    await sleep(120);
   }
   return removed;
 }
 
 /**
- * Tulis blok, dengan isolasi kegagalan.
- * Kalau satu chunk ditolak, retry per blok untuk menemukan yang bermasalah,
- * lalu turunkan blok itu jadi paragraf biasa supaya sisanya tetap masuk.
+ * Tulis blok. Error izin -> berhenti segera (retry tidak ada gunanya).
+ * Error validasi -> isolasi per blok untuk menemukan yang bermasalah.
  */
 async function appendBlocks(pageId, blocks) {
   let written = 0;
@@ -347,7 +388,11 @@ async function appendBlocks(pageId, blocks) {
       written += chunk.length;
       await sleep(150);
     } catch (err) {
-      log('warn', `chunk blok ${i}-${i + chunk.length - 1} ditolak, isolasi per blok...`);
+      // Error izin: berhenti sekarang. Mencoba 100 blok satu-satu hanya
+      // menghasilkan 100 kegagalan identik dan memperlambat pesan errornya.
+      if (isPermissionIssue(err)) throw new PermissionError(pageId, err.notionMessage ?? err.message);
+
+      log('warn', `chunk blok ${i}-${i + chunk.length - 1} ditolak (${err.status} ${err.code}), isolasi per blok...`);
       for (let j = 0; j < chunk.length; j++) {
         const b = chunk[j];
         try {
@@ -357,8 +402,8 @@ async function appendBlocks(pageId, blocks) {
           });
           written++;
         } catch (e2) {
-          log('err', `blok #${i + j} tipe "${b.type}" ditolak: ${e2.message.slice(0, 300)}`);
-          // Fallback: turunkan jadi paragraf teks polos.
+          if (isPermissionIssue(e2)) throw new PermissionError(pageId, e2.notionMessage ?? e2.message);
+          log('err', `blok #${i + j} tipe "${b.type}" ditolak: ${(e2.notionMessage ?? e2.message).slice(0, 300)}`);
           try {
             await notion(`/blocks/${pageId}/children`, {
               method: 'PATCH',
@@ -369,7 +414,8 @@ async function appendBlocks(pageId, blocks) {
             written++;
             degraded++;
           } catch (e3) {
-            log('err', `fallback paragraf untuk blok #${i + j} juga gagal: ${e3.message.slice(0, 200)}`);
+            if (isPermissionIssue(e3)) throw new PermissionError(pageId, e3.notionMessage ?? e3.message);
+            log('err', `fallback paragraf blok #${i + j} juga gagal: ${(e3.notionMessage ?? e3.message).slice(0, 200)}`);
           }
         }
         await sleep(150);
@@ -383,8 +429,7 @@ async function appendBlocks(pageId, blocks) {
 // ------------------------------------------------------------------ main
 
 async function main() {
-  const manifestPath = join(__dirname, 'manifest.json');
-  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  const manifest = JSON.parse(await readFile(join(__dirname, 'manifest.json'), 'utf8'));
   if (manifest.notionVersion) NOTION_VERSION = manifest.notionVersion;
 
   if (DRY_RUN) log('info', 'MODE DRY-RUN - tidak ada yang ditulis ke Notion');
@@ -405,6 +450,7 @@ async function main() {
   }
 
   let failed = 0;
+  let permissionProblem = false;
 
   for (const target of active) {
     const label = `${target.file} -> ${target.title}`;
@@ -413,7 +459,6 @@ async function main() {
 
       const md = await readFile(join(REPO_ROOT, target.file), 'utf8');
       const blocks = markdownToBlocks(md);
-
       if (!blocks.length) throw new Error('konversi menghasilkan 0 blok - kemungkinan file kosong');
 
       if (DRY_RUN) {
@@ -422,35 +467,37 @@ async function main() {
         continue;
       }
 
-      // 1. Catat blok lama SEBELUM menulis apa pun.
+      // 1. Preflight - gagal cepat dengan pesan jelas kalau akses bermasalah.
+      await preflight(target.pageId);
+
+      // 2. Catat blok lama SEBELUM menulis apa pun.
       const oldIds = await listChildIds(target.pageId);
-      log('info', `${label} - ${oldIds.length} blok lama tercatat, menulis ${blocks.length} blok baru...`);
+      log('info', `${label} - ${oldIds.length} blok lama, menulis ${blocks.length} blok baru...`);
 
-      // 2. Tulis blok baru DULU. Kalau ini gagal, isi lama masih utuh.
+      // 3. Tulis dulu. Kalau gagal, isi lama masih utuh.
       const { written, degraded } = await appendBlocks(target.pageId, blocks);
+      if (written === 0) throw new Error('nol blok ditulis - isi lama TIDAK dihapus, halaman tetap utuh');
 
-      if (written === 0) {
-        throw new Error('nol blok berhasil ditulis - isi lama TIDAK dihapus, halaman tetap utuh');
-      }
-
-      // 3. Baru hapus blok lama.
+      // 4. Baru hapus blok lama.
       const removed = await deleteBlocks(oldIds);
 
-      // 4. Verifikasi pasca-tulis.
+      // 5. Verifikasi.
       const finalCount = (await listChildIds(target.pageId)).length;
-      if (finalCount === 0) {
-        throw new Error('VERIFIKASI GAGAL: halaman kosong setelah sync');
-      }
+      if (finalCount === 0) throw new Error('VERIFIKASI GAGAL: halaman kosong setelah sync');
 
       const note = degraded ? ` (${degraded} blok diturunkan jadi paragraf)` : '';
-      log('ok', `${label} - ${written} blok ditulis, ${removed} blok lama dihapus, ${finalCount} blok final${note}`);
+      log('ok', `${label} - ${written} blok ditulis, ${removed} lama dihapus, ${finalCount} blok final${note}`);
     } catch (err) {
       failed++;
-      log('err', `${label} - ${err.message}`);
+      if (err.isPermission) permissionProblem = true;
+      log('err', `${label}\n        ${err.message}`);
     }
   }
 
   if (failed) {
+    if (permissionProblem) {
+      log('err', 'Kegagalan ini BUKAN masalah kode - butuh perbaikan izin manual di Notion. Baca instruksi di atas.');
+    }
     log('err', `${failed} dari ${active.length} target gagal`);
     process.exit(1);
   }
