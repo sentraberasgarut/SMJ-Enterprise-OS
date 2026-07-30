@@ -1,25 +1,26 @@
 {
-  "_comment": "Peta file repo -> halaman Notion. Sync SATU ARAH: repo menimpa Notion. Set enabled: true HANYA setelah NOTION_TOKEN ada dan dry-run sudah dicek.",
-  "_peringatan": "Halaman mirror Roadmap v6 saat ini berisi versi RINGKAS yang ditulis manual untuk dibaca di HP. Menyalakan enabled: true akan MENGGANTINYA dengan isi lengkap file Markdown (jauh lebih panjang). Itu perilaku yang diinginkan, tapi pastikan Anda memang mau versi panjang di HP.",
+  "_comment": "Peta file repo -> halaman Notion. Sync SATU ARAH: repo menimpa Notion. Set enabled: true HANYA setelah NOTION_TOKEN ada, pageId terisi, dan halaman sudah di-share ke integration 'SMJ Repo Sync'.",
+  "_syarat_wajib": "Setiap halaman target HARUS di-share ke integration 'SMJ Repo Sync' di Notion, kalau tidak sync gagal dengan error 'Could not find page'. Cara termudah: share integration di halaman induk 'SMJ Enterprise OS' sekali saja - semua halaman anak otomatis ikut.",
   "notionVersion": "2022-06-28",
   "targets": [
     {
+      "file": "adr/0001-github-authoritative-notion-mirror.md",
+      "pageId": "3ad2a394-6232-816f-8110-e97311071785",
+      "title": "ADR-0001 — GitHub authoritative, Notion mirror",
+      "enabled": true
+    },
+    {
+      "file": "ops/audit/2026-07-30-buku-toko-audit.md",
+      "pageId": "3ad2a394-6232-8125-95b0-c1e10e7c6a27",
+      "title": "Audit Buku Toko & Central Kitchen (30 Jul 2026)",
+      "enabled": true
+    },
+    {
+      "_catatan": "SENGAJA enabled:false. Halaman mirror Roadmap v6 berisi versi RINGKAS yang dikurasi manual untuk dibaca di HP, plus Adendum 1 (koreksi 30 Jul sore). Menyalakan ini akan MENGGANTINYA dengan file Markdown lengkap 500+ baris - buruk untuk layar HP dan menghapus kurasi itu. Nyalakan hanya kalau Anda memang mau versi panjang.",
       "file": "roadmap/v6-2026-07-30.md",
       "pageId": "3ad2a394-6232-81d8-bf79-d2bc2a54af4c",
       "title": "16 Roadmap v6 — Integrasi Operasional & Funnel",
       "enabled": false
-    },
-    {
-      "file": "ops/audit/2026-07-30-buku-toko-audit.md",
-      "pageId": "",
-      "title": "Audit Buku Toko & Central Kitchen (30 Jul 2026)",
-      "enabled": false
-    },
-    {
-      "file": "adr/0001-github-authoritative-notion-mirror.md",
-      "pageId": "",
-      "title": "ADR-0001 — GitHub authoritative, Notion mirror",
-      "enabled": true
     }
   ]
 }
