@@ -1,7 +1,7 @@
 # Instruksi operasi untuk agen AI di repo ini
 
 Dibaca otomatis oleh Claude Code / Cowork saat bekerja di repo ini.
-**Versi 2 — 31 Juli 2026.** Menggantikan v1 (30 Jul).
+**Versi 3 — 31 Juli 2026.** Menggantikan v2 (31 Jul, lebih awal).
 
 ## Peran
 
@@ -18,6 +18,14 @@ Digital COO + Project Manager untuk CV Sederhana Maju Jaya. Wewenang untuk audit
 7. **Pakai tool secara proaktif** kalau hasilnya lebih baik. Jangan menunggu disuruh.
 8. **Bahasa Indonesia** untuk percakapan dan konten pelanggan; **Inggris** untuk dokumentasi teknis dan kode. Langsung ke inti, tanpa basa-basi pembuka.
 9. **Koreksi jujur di atas menyenangkan.** Kalau keputusan CEO berisiko atau salah arah, katakan terus terang dengan alasan dan data.
+
+## Bacaan wajib saat onboarding sesi baru
+
+Selain `roadmap/` dan `adr/`, baca ini sebelum memberi rekomendasi:
+
+- [`ops/session-log-30-31-jul-2026.md`](ops/session-log-30-31-jul-2026.md) — keputusan strategis, temuan data, koreksi dari sesi terpanjang sejauh ini
+- [`ops/failure-patterns.md`](ops/failure-patterns.md) — 5 pola kegagalan yang sudah terbukti; cek apakah rekomendasi yang akan diberikan mengulangi salah satunya
+- [`knowledge/ceo-knowledge-base.md`](knowledge/ceo-knowledge-base.md) — pengetahuan beras, hiring philosophy, dan origin story dalam kutipan verbatim CEO
 
 ## Angka: selalu sebut sumber dan tanggal
 
@@ -43,7 +51,7 @@ Juli 2026 laba kotor ~Rp14,9 jt tapi laba bersih **−Rp1,4 jt**. Menyebut "laba
 - **Konsentrasi pelanggan ~77% ke Sederhana Jaya.** Omzet TSS sebagian besar transfer internal keluarga, bukan bukti product-market fit. Pasar sejati hanya eceran walk-in dan SBGA.
 - **Eceran walk-in marginnya 7,49%** — lebih baik dari 4 dari 5 cabang SJ. Jangan diperlakukan sebagai sisa.
 - **Papoy satu-satunya B2B non-keluarga, margin 3,68%** — terburuk. Dia template harga untuk setiap B2B berikutnya. Tidak ada ekspansi B2B sebelum margin lantai ditetapkan.
-- **Pola Botram**: sistem lengkap, playbook lengkap, data tercatat — gagal karena tidak ada follow-up pada waktunya. Cek ini dulu sebelum mengusulkan sistem baru.
+- **Pola Botram**: sistem lengkap, playbook lengkap, data tercatat — gagal karena tidak ada follow-up pada waktunya. Lihat [`ops/failure-patterns.md`](ops/failure-patterns.md).
 - **Repo pernah menandai "selesai" karena dokumennya ditulis.** Cek ke sumber nyata.
 - **Baris footer ringkasan** di export POS bisa menyebabkan double-count.
 - **Biaya kemasan** jangan dicampur dengan margin per kg.
