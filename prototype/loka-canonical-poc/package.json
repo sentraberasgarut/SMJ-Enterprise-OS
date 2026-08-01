@@ -1,0 +1,16 @@
+{
+  "name": "loka-canonical-poc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Proof of concept: Loka Realm backup -> canonical JSON, per ADR-0003's Data Ingestion Architecture. Local prototype only, not for production use.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "sync:buku-toko": "node src/cloud/runBukuTokoSync.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "googleapis": "^173.0.0",
+    "realm": "^20.2.0"
+  }
+}

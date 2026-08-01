@@ -4,7 +4,12 @@ Artefak historis. **Tidak authoritative.** Jangan dipakai sebagai sumber.
 
 ---
 
-## Export Notion 22 Jul 2026 — perlu dihapus manual
+## Export Notion 22 Jul 2026 — SELESAI DIHAPUS
+
+Diverifikasi 1 Agustus 2026: `SMJ-Enterprise-OS.zip` dan folder `SMJ-Enterprise-OS/` sudah tidak ada lagi di root repo. Catatan di bawah ini disimpan sebagai riwayat, bukan tindakan yang masih menunggu.
+
+<details>
+<summary>Catatan asli (sudah selesai)</summary>
 
 Dua artefak dari percobaan migrasi pertama masih berada di root repo:
 
@@ -32,3 +37,5 @@ git push
 ```
 
 Riwayatnya tetap ada di git kalau suatu saat perlu dilihat lagi — menghapus file tidak menghapus commit-nya.
+
+</details>

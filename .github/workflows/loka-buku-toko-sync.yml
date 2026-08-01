@@ -1,0 +1,72 @@
+name: Sync Loka -> Buku Toko (cloud)
+
+# Menggantikan Windows Task Scheduler di laptop. Baca
+# prototype/loka-canonical-poc/src/cloud/README.md untuk latar belakang dan
+# langkah setup manual (Workload Identity Federation, secrets repo).
+#
+# Auth: Workload Identity Federation — tidak ada service account key file,
+# tidak ada secret statis. GitHub Actions minta token OIDC dari GitHub,
+# token itu ditukar ke Google credential sementara (berlaku hanya selama run
+# ini). Tidak ada yang bisa dicuri karena tidak ada yang disimpan.
+#
+# Job ini membaca backup .realm terbaru (berdasarkan isi, bukan nama file —
+# lihat src/connector/backupDiscovery.js) dari folder Drive "Loka Kasir",
+# lalu menulis loka-YYYY-MM-DD.json ke folder JSON di dalamnya — folder yang
+# SUDAH dibaca Buku Toko setiap hari jam 20:00 WIB. Tidak ada perubahan di
+# Code.gs Buku Toko yang dibutuhkan.
+#
+# Repository variables yang dibutuhkan (Settings → Secrets and variables →
+# Actions → Variables — bukan Secrets, karena ini bukan nilai sensitif):
+#   GCP_WORKLOAD_IDENTITY_PROVIDER  — path provider WIF dari GCP Console
+#   GCP_SERVICE_ACCOUNT_EMAIL       — email service account Google
+#
+# Repository secret yang dibutuhkan:
+#   LOKA_KASIR_FOLDER_ID            — ID folder Drive "Loka Kasir"
+#
+# Kalau belum diset, job ini jalan sebagai no-op (lihat README di atas untuk
+# cara membuatnya). Aman untuk di-merge sebelum setup GCP selesai.
+
+on:
+  schedule:
+    # 12:00 UTC = 19:00 WIB — sebelum trigger hitungRingkasLoka Buku Toko
+    # (20:00 WIB), meniru jam jalan Task Scheduler yang sudah ada.
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: loka-buku-toko-sync
+  cancel-in-progress: false
+
+permissions:
+  id-token: write   # dibutuhkan google-github-actions/auth untuk minta token OIDC
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prototype/loka-canonical-poc
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}
+        if: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' }}
+        # Kalau variable belum diset, step ini di-skip dan GOOGLE_APPLICATION_CREDENTIALS
+        # tidak di-set. Sync akan jalan sebagai no-op (lihat runBukuTokoSync.js).
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync
+        env:
+          LOKA_KASIR_FOLDER_ID: ${{ secrets.LOKA_KASIR_FOLDER_ID }}
+        run: npm run sync:buku-toko

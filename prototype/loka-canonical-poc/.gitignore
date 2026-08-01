@@ -1,0 +1,6 @@
+node_modules/
+output/*.json
+!output/.gitkeep
+# Test fixtures that were generated from real backups contain real customer PII
+tests/fixtures/golden-canonical.json
+tests/fixtures/golden-validation-report.json

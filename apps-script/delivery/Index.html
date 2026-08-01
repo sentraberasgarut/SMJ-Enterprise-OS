@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<!--
+  Delivery Evidence — Increment 3: Responsibility Accepted (Goods Received).
+  Layar Persiapan tidak berubah perilakunya dari Increment 2. Baru: layar
+  Kedatangan (Driver) + pemilih kemampuan saat seseorang punya lebih dari
+  satu (mis. Mas War: Warehouse Acting + Driver Primary).
+  Tidak ada Timeline/dashboard integration di sini — Increment 5+.
+-->
+<style>
+  :root{
+    --hijau:#4F6042; --hijau-tua:#3E4C34;
+    --emas:#E8A22C; --krem:#F7F3E9; --krem-tua:#EDE6D5;
+    --teks:#2C2C2C; --abu:#7A7568; --merah:#B3452F; --putih:#FFFFFF;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+       background:var(--krem);color:var(--teks);font-size:16px;}
+
+  .gerbang{min-height:100vh;display:flex;flex-direction:column;align-items:center;
+           justify-content:center;padding:26px;background:var(--hijau);text-align:center;}
+  .gerbang h2{color:var(--krem);font-size:19px;margin:0 0 4px;letter-spacing:.4px;}
+  .gerbang p{color:rgba(247,243,233,.7);font-size:13px;margin:0 0 24px;}
+  .gerbang .kotak{background:var(--putih);border-radius:14px;padding:20px;width:100%;max-width:280px;}
+  .gerbang input{width:100%;text-align:center;font-size:26px;letter-spacing:12px;
+                 font-weight:700;padding:13px 13px 13px 25px;border:1.5px solid var(--krem-tua);
+                 border-radius:9px;font-family:inherit;}
+  .gerbang button{width:100%;margin-top:11px;background:var(--hijau);color:var(--krem);
+                  border:0;padding:14px;font-size:16px;font-weight:700;border-radius:10px;font-family:inherit;}
+  .gerbang .err{color:var(--emas);font-size:13px;margin-top:11px;font-weight:600;}
+
+  .layar{display:none;min-height:100vh;}
+  .header{background:var(--hijau);color:var(--krem);padding:14px 16px;}
+  .header b{display:block;font-size:15px;}
+  .header span{font-size:11.5px;opacity:.8;}
+
+  .isi{padding:16px;max-width:420px;margin:0 auto;}
+  .label{font-size:11px;color:var(--abu);text-transform:uppercase;letter-spacing:.5px;
+         font-weight:700;margin:18px 0 8px;}
+  .label:first-child{margin-top:0;}
+
+  .pilihan{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .pilihan button{padding:20px 8px;font-size:14px;font-weight:700;border-radius:12px;
+                 border:2px solid var(--krem-tua);background:var(--putih);color:var(--teks);
+                 font-family:inherit;}
+  .pilihan button.aktif{border-color:var(--hijau);background:var(--hijau);color:var(--krem);}
+
+  .aksiBesar{width:100%;padding:22px;font-size:16px;font-weight:700;border-radius:12px;
+             border:2px solid var(--hijau);background:var(--putih);color:var(--hijau);
+             font-family:inherit;margin-bottom:10px;text-align:left;}
+  .aksiBesar span{display:block;font-size:12px;font-weight:500;color:var(--abu);margin-top:3px;}
+
+  .kartuTerbuka{width:100%;padding:16px;border-radius:12px;border:2px solid var(--krem-tua);
+               background:var(--putih);font-family:inherit;text-align:left;margin-bottom:10px;}
+  .kartuTerbuka.aktif{border-color:var(--hijau);background:#F1F5EE;}
+  .kartuTerbuka b{display:block;font-size:15px;color:var(--teks);}
+  .kartuTerbuka span{font-size:12px;color:var(--abu);}
+
+  .foto-tombol{width:100%;padding:22px;border-radius:12px;border:2px dashed var(--krem-tua);
+              background:var(--putih);color:var(--abu);font-size:14px;font-weight:600;font-family:inherit;}
+  .foto-preview{width:100%;border-radius:12px;display:none;margin-top:4px;}
+
+  .catatan-toggle{background:none;border:none;color:var(--abu);font-size:12.5px;
+                  text-decoration:underline;padding:4px 0;font-family:inherit;display:block;}
+  textarea{width:100%;border:1.5px solid var(--krem-tua);border-radius:9px;padding:10px;
+           font-family:inherit;font-size:14px;margin-top:8px;display:none;resize:vertical;min-height:60px;}
+
+  .kirim{width:100%;margin-top:22px;background:var(--hijau);color:var(--krem);border:0;
+        padding:16px;font-size:16px;font-weight:700;border-radius:10px;font-family:inherit;}
+  .kirim:disabled{background:var(--krem-tua);color:var(--abu);}
+  .err{color:var(--merah);font-size:13px;margin-top:10px;font-weight:600;}
+  .kosong{text-align:center;color:var(--abu);padding:40px 16px;font-size:14px;line-height:1.7;}
+  .ulang{background:none;border:1.5px solid var(--krem-tua);color:var(--teks);padding:10px 16px;
+        border-radius:9px;font-family:inherit;font-size:13px;margin-top:14px;}
+
+  .selesai{min-height:100vh;display:none;flex-direction:column;align-items:center;
+           justify-content:center;padding:26px;text-align:center;}
+  .selesai .centang{width:64px;height:64px;border-radius:50%;background:var(--hijau);
+                    color:var(--krem);font-size:32px;display:flex;align-items:center;
+                    justify-content:center;margin-bottom:16px;}
+  .selesai h3{margin:0 0 6px;font-size:17px;}
+  .selesai p{color:var(--abu);font-size:13px;margin:0 0 24px;}
+  .selesai button{background:var(--hijau);color:var(--krem);border:0;padding:14px 28px;
+                  font-size:15px;font-weight:700;border-radius:10px;font-family:inherit;}
+</style>
+</head>
+<body>
+
+<div class="gerbang" id="gerbang">
+  <h2>DELIVERY EVIDENCE</h2>
+  <p>Enterprise OS</p>
+  <div class="kotak">
+    <input id="pin" type="tel" inputmode="numeric" maxlength="8" placeholder="•••• PIN"
+           onkeyup="if(event.key==='Enter')masuk()">
+    <button id="btnMasuk" onclick="masuk()">Masuk</button>
+    <div class="err" id="pinErr"></div>
+  </div>
+</div>
+
+<!-- Pemilih kemampuan — hanya tampil kalau orang ini punya lebih dari satu -->
+<div class="layar" id="layarPilih">
+  <div class="header"><b id="pilihNama">—</b><span>Apa yang mau dicatat?</span></div>
+  <div class="isi" id="pilihBox"></div>
+</div>
+
+<!-- Persiapan (Goods Departed) — sama seperti Increment 2 -->
+<div class="layar" id="layarPersiapan">
+  <div class="header"><b id="pNama">—</b><span>Barang Berangkat</span></div>
+  <div class="isi">
+    <div class="label">Tujuan</div>
+    <div class="pilihan" id="tujuanBox"></div>
+
+    <div class="label">Foto barang siap kirim</div>
+    <button class="foto-tombol" id="btnFotoP" onclick="document.getElementById('fileFotoP').click()">📷 Ambil foto</button>
+    <input type="file" id="fileFotoP" accept="image/*" capture="environment" style="display:none" onchange="fotoDipilih(event,'P')">
+    <img class="foto-preview" id="previewFotoP">
+
+    <button class="catatan-toggle" onclick="el('catatanP').style.display='block'">+ tambah catatan (opsional)</button>
+    <textarea id="catatanP" placeholder="Catatan (opsional)"></textarea>
+
+    <button class="kirim" id="btnKirimP" onclick="kirimKeberangkatan()" disabled>Kirim</button>
+    <div class="err" id="errP"></div>
+  </div>
+</div>
+
+<!-- Kedatangan (Goods Received) — BARU Increment 3 -->
+<div class="layar" id="layarKedatangan">
+  <div class="header"><b id="kNama">—</b><span>Barang Sampai</span></div>
+  <div class="isi" id="kedatanganIsi">
+    <div class="label">Keberangkatan yang menunggu konfirmasi</div>
+    <div id="terbukaBox"></div>
+
+    <div id="kedatanganForm" style="display:none">
+      <button class="catatan-toggle" onclick="el('fotoMasalahBox').style.display='block'">Ada yang tidak sesuai? (opsional, tambah foto)</button>
+      <div id="fotoMasalahBox" style="display:none;margin-top:8px">
+        <button class="foto-tombol" id="btnFotoK" onclick="document.getElementById('fileFotoK').click()">📷 Ambil foto</button>
+        <input type="file" id="fileFotoK" accept="image/*" capture="environment" style="display:none" onchange="fotoDipilih(event,'K')">
+        <img class="foto-preview" id="previewFotoK">
+      </div>
+      <button class="catatan-toggle" onclick="el('catatanK').style.display='block'">+ tambah catatan (opsional)</button>
+      <textarea id="catatanK" placeholder="Catatan (opsional)"></textarea>
+
+      <button class="kirim" id="btnKirimK" onclick="kirimKedatangan()">Konfirmasi Sampai</button>
+    </div>
+    <div class="err" id="errK"></div>
+  </div>
+</div>
+
+<!-- Shift (Shift Started) — Shift Accountability. Shift Closed tidak ada
+     di sini, sudah lengkap di Tutup Shift (Buku Toko). -->
+<div class="layar" id="layarShift">
+  <div class="header"><b id="sNama">—</b><span>Mulai Shift</span></div>
+  <div class="isi">
+    <div id="shiftSudahBox"></div>
+    <button class="catatan-toggle" onclick="el('catatanS').style.display='block'">+ tambah catatan (opsional)</button>
+    <textarea id="catatanS" placeholder="Catatan (opsional)"></textarea>
+    <button class="kirim" id="btnKirimS" onclick="kirimShiftMulai()">Tandai Shift Mulai</button>
+    <div class="err" id="errS"></div>
+  </div>
+</div>
+
+<div class="selesai" id="selesai">
+  <div class="centang">✓</div>
+  <h3 id="selesaiJudul">Tersimpan</h3>
+  <p id="ringkasSelesai"></p>
+  <button onclick="mulaiLagi()">Catat lagi</button>
+
+  <div id="kotakBatal" style="display:none;margin-top:18px">
+    <button class="catatan-toggle" id="btnTogglBatal" onclick="el('formBatal').style.display='block';this.style.display='none'">Salah kirim? Batalkan</button>
+    <div id="formBatal" style="display:none;max-width:280px">
+      <textarea id="alasanBatal" placeholder="Alasan (opsional)" style="display:block"></textarea>
+      <button class="ulang" style="width:100%;margin-top:8px;color:var(--merah);border-color:var(--merah)" onclick="batalkanTerakhir()">Ya, batalkan pengiriman ini</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var pinTersimpan = '';
+var namaTersimpan = '';
+var kemampuanTersimpan = [];
+var tujuanDipilih = '';
+var fotoDataP = '';
+var fotoDataK = '';
+var terbukaDipilih = null;
+var eventIdKeberangkatanTerakhir = '';
+
+function el(id){ return document.getElementById(id); }
+function sembunyikanSemuaLayar(){
+  ['gerbang','layarPilih','layarPersiapan','layarKedatangan','layarShift','selesai'].forEach(function(id){
+    el(id).style.display = 'none';
+  });
+}
+
+function masuk(){
+  var pin = (el('pin').value || '').trim();
+  if (!pin) return;
+  var b = el('btnMasuk');
+  b.disabled = true; b.textContent = 'Memeriksa…';
+  el('pinErr').textContent = '';
+  google.script.run
+    .withSuccessHandler(function(res){ setelahMasuk(pin, res); })
+    .withFailureHandler(function(e){
+      el('pinErr').textContent = (e && e.message) ? e.message : String(e);
+      el('pin').value = ''; el('pin').focus();
+      b.disabled = false; b.textContent = 'Masuk';
+    })
+    .masuk(pin);
+}
+
+function setelahMasuk(pin, res){
+  pinTersimpan = pin;
+  namaTersimpan = res.nama;
+  kemampuanTersimpan = res.kemampuan;
+
+  if (kemampuanTersimpan.length > 1){
+    bukaPilihan();
+  } else {
+    bukaLayarUntuk(kemampuanTersimpan[0].app);
+  }
+}
+
+function bukaPilihan(){
+  sembunyikanSemuaLayar();
+  el('layarPilih').style.display = 'block';
+  el('pilihNama').textContent = namaTersimpan;
+  var box = el('pilihBox');
+  box.innerHTML = '';
+  var label = {
+    Warehouse: ['Barang Berangkat', 'Menyiapkan & mengirim'],
+    Driver: ['Barang Sampai', 'Konfirmasi kedatangan'],
+    Shift: ['Mulai Shift', 'Tandai mulai bertugas']
+  };
+  kemampuanTersimpan.forEach(function(k){
+    var btn = document.createElement('button');
+    btn.className = 'aksiBesar';
+    btn.innerHTML = (label[k.app] ? label[k.app][0] : k.app) +
+      '<span>' + (label[k.app] ? label[k.app][1] : '') + (k.status === 'Acting' ? ' — mengisi hari ini' : '') + '</span>';
+    btn.onclick = function(){ bukaLayarUntuk(k.app); };
+    box.appendChild(btn);
+  });
+}
+
+function bukaLayarUntuk(app){
+  if (app === 'Warehouse') bukaPersiapan();
+  else if (app === 'Driver') bukaKedatangan();
+  else bukaShift();
+}
+
+// ---------- Persiapan (Goods Departed) ----------
+
+function bukaPersiapan(){
+  sembunyikanSemuaLayar();
+  el('layarPersiapan').style.display = 'block';
+  el('pNama').textContent = namaTersimpan;
+  var box = el('tujuanBox');
+  box.innerHTML = '';
+  ['Sederhana Jaya 1','Sederhana Jaya 4'].forEach(function(t){
+    var btn = document.createElement('button');
+    btn.textContent = t;
+    btn.onclick = function(){ pilihTujuan(t, btn); };
+    box.appendChild(btn);
+  });
+}
+
+function pilihTujuan(t, btnEl){
+  tujuanDipilih = t;
+  Array.prototype.forEach.call(el('tujuanBox').children, function(b){ b.classList.remove('aktif'); });
+  btnEl.classList.add('aktif');
+  el('btnKirimP').disabled = !(tujuanDipilih && fotoDataP);
+}
+
+function kirimKeberangkatan(){
+  el('btnKirimP').disabled = true;
+  el('btnKirimP').textContent = 'Mengirim…';
+  el('errP').textContent = '';
+  google.script.run
+    .withSuccessHandler(function(res){
+      tampilkanSelesai('ke ' + res.tujuan, res, 'keberangkatan');
+    })
+    .withFailureHandler(function(e){
+      el('errP').textContent = (e && e.message) ? e.message : String(e);
+      el('btnKirimP').disabled = false;
+      el('btnKirimP').textContent = 'Kirim';
+    })
+    .catatKeberangkatan(pinTersimpan, tujuanDipilih, fotoDataP, el('catatanP').value);
+}
+
+// ---------- Kedatangan (Goods Received) ----------
+
+function bukaKedatangan(){
+  sembunyikanSemuaLayar();
+  el('layarKedatangan').style.display = 'block';
+  el('kNama').textContent = namaTersimpan;
+  el('terbukaBox').innerHTML = '<div class="kosong">Memuat…</div>';
+  el('kedatanganForm').style.display = 'none';
+  google.script.run
+    .withSuccessHandler(tampilkanTerbuka)
+    .withFailureHandler(function(e){
+      el('terbukaBox').innerHTML = '';
+      el('errK').textContent = (e && e.message) ? e.message : String(e);
+    })
+    .ambilKeberangkatanTerbuka(pinTersimpan);
+}
+
+function tampilkanTerbuka(res){
+  var box = el('terbukaBox');
+  box.innerHTML = '';
+  if (!res.terbuka.length){
+    box.innerHTML = '<div class="kosong">Belum ada keberangkatan yang menunggu konfirmasi hari ini.</div>' +
+      '<button class="ulang" onclick="bukaKedatangan()">Muat ulang</button>';
+    return;
+  }
+  res.terbuka.forEach(function(t){
+    var btn = document.createElement('button');
+    btn.className = 'kartuTerbuka';
+    var jam = new Date(t.waktu).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+    btn.innerHTML = '<b>' + t.tujuan + '</b><span>Berangkat ' + jam + '</span>';
+    btn.onclick = function(){ pilihTerbuka(t, btn); };
+    box.appendChild(btn);
+  });
+  if (res.terbuka.length === 1){
+    pilihTerbuka(res.terbuka[0], box.children[0]);
+  }
+}
+
+function pilihTerbuka(t, btnEl){
+  terbukaDipilih = t;
+  Array.prototype.forEach.call(el('terbukaBox').children, function(b){
+    if (b.classList) b.classList.remove('aktif');
+  });
+  if (btnEl.classList) btnEl.classList.add('aktif');
+  el('kedatanganForm').style.display = 'block';
+}
+
+function kirimKedatangan(){
+  if (!terbukaDipilih) return;
+  el('btnKirimK').disabled = true;
+  el('btnKirimK').textContent = 'Mengirim…';
+  el('errK').textContent = '';
+  google.script.run
+    .withSuccessHandler(function(res){
+      tampilkanSelesai('dari ' + res.tujuan, res, 'kedatangan');
+    })
+    .withFailureHandler(function(e){
+      el('errK').textContent = (e && e.message) ? e.message : String(e);
+      el('btnKirimK').disabled = false;
+      el('btnKirimK').textContent = 'Konfirmasi Sampai';
+    })
+    .catatKedatangan(pinTersimpan, terbukaDipilih.eventId, fotoDataK, el('catatanK').value);
+}
+
+// ---------- Shift (Shift Started) ----------
+
+function bukaShift(){
+  sembunyikanSemuaLayar();
+  el('layarShift').style.display = 'block';
+  el('sNama').textContent = namaTersimpan;
+  el('shiftSudahBox').innerHTML = '';
+  google.script.run
+    .withSuccessHandler(function(res){
+      if (res.sudahMulai.length){
+        var jam = new Date(res.sudahMulai[res.sudahMulai.length - 1].waktu)
+          .toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+        el('shiftSudahBox').innerHTML = '<div class="kosong" style="padding:14px 0">' +
+          'Sudah ditandai mulai hari ini, ' + jam + '. Bisa ditandai lagi kalau memang mulai ulang.</div>';
+      }
+    })
+    .withFailureHandler(function(){ /* diam — tombol tetap bisa dipakai */ })
+    .ambilStatusShiftMulai(pinTersimpan);
+}
+
+function kirimShiftMulai(){
+  el('btnKirimS').disabled = true;
+  el('btnKirimS').textContent = 'Menandai…';
+  el('errS').textContent = '';
+  google.script.run
+    .withSuccessHandler(function(res){
+      tampilkanSelesai('shift dimulai', res, 'shift');
+    })
+    .withFailureHandler(function(e){
+      el('errS').textContent = (e && e.message) ? e.message : String(e);
+      el('btnKirimS').disabled = false;
+      el('btnKirimS').textContent = 'Tandai Shift Mulai';
+    })
+    .catatShiftMulai(pinTersimpan, el('catatanS').value);
+}
+
+// ---------- Bersama ----------
+
+function fotoDipilih(evt, kode){
+  var file = evt.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var data = e.target.result;
+    if (kode === 'P'){
+      fotoDataP = data;
+      el('previewFotoP').src = data; el('previewFotoP').style.display = 'block';
+      el('btnFotoP').textContent = '📷 Ganti foto';
+      el('btnKirimP').disabled = !(tujuanDipilih && fotoDataP);
+    } else {
+      fotoDataK = data;
+      el('previewFotoK').src = data; el('previewFotoK').style.display = 'block';
+      el('btnFotoK').textContent = '📷 Ganti foto';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+var JUDUL_SELESAI = {
+  keberangkatan: 'Tersimpan', kedatangan: 'Tanggung jawab berpindah', shift: 'Shift dimulai'
+};
+
+function tampilkanSelesai(ringkas, res, jenis){
+  sembunyikanSemuaLayar();
+  el('selesai').style.display = 'flex';
+  el('selesaiJudul').textContent = JUDUL_SELESAI[jenis] || 'Tersimpan';
+  el('ringkasSelesai').textContent = res.nama + ' — ' + ringkas + ', ' +
+    new Date(res.waktu).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+
+  // Batalkan hanya masuk akal untuk Goods Departed yang belum dikonfirmasi
+  // sampai — bukan untuk Kedatangan (sudah final) atau Shift (bukan konsep
+  // yang sama, tidak ada "pembatalan shift" di lingkup ini).
+  if (jenis === 'keberangkatan' && res.eventId){
+    eventIdKeberangkatanTerakhir = res.eventId;
+    el('kotakBatal').style.display = 'block';
+    el('formBatal').style.display = 'none';
+    el('btnTogglBatal').style.display = 'block';
+    el('alasanBatal').value = '';
+  } else {
+    eventIdKeberangkatanTerakhir = '';
+    el('kotakBatal').style.display = 'none';
+  }
+}
+
+function batalkanTerakhir(){
+  if (!eventIdKeberangkatanTerakhir) return;
+  var btn = el('formBatal').querySelector('.ulang');
+  btn.disabled = true; btn.textContent = 'Membatalkan…';
+  google.script.run
+    .withSuccessHandler(function(){
+      el('selesaiJudul').textContent = 'Dibatalkan';
+      el('ringkasSelesai').textContent = 'Pengiriman ini sudah dibatalkan.';
+      el('kotakBatal').style.display = 'none';
+      eventIdKeberangkatanTerakhir = '';
+    })
+    .withFailureHandler(function(e){
+      btn.disabled = false; btn.textContent = 'Ya, batalkan pengiriman ini';
+      alert((e && e.message) ? e.message : String(e));
+    })
+    .batalkanKeberangkatan(pinTersimpan, eventIdKeberangkatanTerakhir, el('alasanBatal').value);
+}
+
+function mulaiLagi(){
+  tujuanDipilih = ''; fotoDataP = ''; fotoDataK = ''; terbukaDipilih = null;
+  eventIdKeberangkatanTerakhir = '';
+  el('previewFotoP').style.display = 'none'; el('btnFotoP').textContent = '📷 Ambil foto';
+  el('previewFotoK').style.display = 'none'; el('btnFotoK').textContent = '📷 Ambil foto';
+  el('catatanP').value = ''; el('catatanP').style.display = 'none';
+  el('catatanK').value = ''; el('catatanK').style.display = 'none';
+  el('fotoMasalahBox').style.display = 'none';
+  el('fileFotoP').value = ''; el('fileFotoK').value = '';
+  el('btnKirimP').disabled = true; el('btnKirimP').textContent = 'Kirim';
+  el('btnKirimK').disabled = false; el('btnKirimK').textContent = 'Konfirmasi Sampai';
+  el('btnKirimS').disabled = false; el('btnKirimS').textContent = 'Tandai Shift Mulai';
+  el('catatanS').value = ''; el('catatanS').style.display = 'none';
+  el('errS').textContent = '';
+  el('kotakBatal').style.display = 'none';
+  el('formBatal').style.display = 'none';
+  el('btnTogglBatal').style.display = 'block';
+  el('alasanBatal').value = '';
+
+  if (kemampuanTersimpan.length > 1) bukaPilihan();
+  else bukaLayarUntuk(kemampuanTersimpan[0].app);
+}
+
+el('pin').focus();
+</script>
+</body>
+</html>

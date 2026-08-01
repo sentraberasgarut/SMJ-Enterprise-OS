@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<!--
+  SMJ Enterprise OS — Dashboard · Operational Foundation.
+  CEO/Owner/Kasir, dua Business Unit (Toko Sembako, Central Kitchen),
+  kartu Finansial + Operasi (Pengiriman/Shift/Kas) + Governance, dan
+  Riwayat Hari Ini (Evidence Timeline + Responsibility Timeline) untuk
+  CEO/Owner di Toko Sembako — satu hari berjalan, bukan riwayat multi-hari.
+  Central Kitchen menampilkan "Data belum tersedia" apa adanya.
+-->
+<style>
+  :root, body[data-unit="tss"]{
+    --aksen:#4F6042; --aksen-tua:#3E4C34; --aksen-muda:#6E8158; --aksen-2:#E8A22C;
+  }
+  body[data-unit="central-kitchen"]{
+    --aksen:#1E7F6B; --aksen-tua:#155C4E; --aksen-muda:#4FA893; --aksen-2:#2FA88C;
+  }
+  :root{
+    --krem:#F7F3E9; --krem-tua:#EDE6D5; --teks:#2C2C2C; --abu:#7A7568;
+    --merah:#B3452F; --putih:#FFFFFF;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+       background:var(--krem);color:var(--teks);font-size:16px;padding-bottom:40px;
+       transition:background .2s;}
+
+  header{background:var(--aksen);color:var(--krem);padding:14px 16px;
+         position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.15);
+         display:flex;align-items:center;gap:10px;transition:background .2s;}
+  header .judul{flex:1;min-width:0;}
+  header h1{margin:0;font-size:15px;letter-spacing:.4px;font-weight:700;}
+  header p{margin:2px 0 0;font-size:11px;opacity:.8;}
+  .keluar{background:rgba(255,255,255,.13);border:none;color:var(--krem);
+          font-size:11px;padding:7px 11px;border-radius:7px;font-family:inherit;flex:none;}
+
+  .tab-unit, .tab-mode{display:flex;gap:8px;padding:10px 16px 0;max-width:520px;margin:0 auto;}
+  .tab-unit button, .tab-mode button{flex:1;padding:10px;font-size:12.5px;font-weight:700;border-radius:9px;
+                   border:1.5px solid var(--krem-tua);background:var(--putih);color:var(--abu);
+                   font-family:inherit;}
+  .tab-unit button.aktif, .tab-mode button.aktif{background:var(--aksen);border-color:var(--aksen);color:var(--krem);}
+  .tab-mode button{flex:none;padding:8px 14px;}
+
+  .riwayat-item{background:var(--putih);border-radius:10px;padding:12px 14px;margin-bottom:8px;
+                border-left:3px solid var(--krem-tua);}
+  .riwayat-item.perhatian{border-left-color:var(--merah);}
+  .riwayat-item .baris1{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
+  .riwayat-item .jam{font-size:13px;font-weight:700;color:var(--teks);flex:none;}
+  .riwayat-item .jenis{font-size:13px;font-weight:700;color:var(--teks);}
+  .riwayat-item .status{font-size:12px;font-weight:700;color:var(--aksen);text-align:right;}
+  .riwayat-item .status.perhatian{color:var(--merah);}
+  .riwayat-item .sub{font-size:11.5px;color:var(--abu);margin-top:3px;}
+  .riwayat-jendela{font-size:10px;color:var(--abu);text-transform:uppercase;letter-spacing:.4px;
+                   font-weight:800;margin:16px 0 6px;}
+  .riwayat-jendela:first-child{margin-top:0;}
+
+  .tj-ringkas{background:var(--putih);border-radius:12px;padding:14px 16px;margin-bottom:16px;}
+  .tj-ringkas .judul{font-size:11px;color:var(--abu);text-transform:uppercase;letter-spacing:.5px;
+                     font-weight:800;margin-bottom:10px;}
+  .tj-baris{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;
+           border-top:1px solid var(--krem-tua);}
+  .tj-baris:first-of-type{border-top:none;}
+  .tj-baris .jendela{font-size:12.5px;font-weight:700;}
+  .tj-baris .siapa{font-size:12px;color:var(--abu);text-align:right;}
+
+  .wrap{padding:14px;max-width:520px;margin:0 auto;}
+
+  .gerbang{min-height:100vh;display:flex;flex-direction:column;align-items:center;
+           justify-content:center;padding:26px;background:var(--aksen);text-align:center;}
+  .gerbang h2{color:var(--krem);font-size:20px;margin:0 0 4px;letter-spacing:.5px;}
+  .gerbang p{color:rgba(247,243,233,.7);font-size:13px;margin:0 0 26px;}
+  .gerbang .kotak{background:var(--putih);border-radius:14px;padding:20px;width:100%;max-width:290px;}
+  .gerbang input{width:100%;text-align:center;font-size:26px;letter-spacing:12px;font-weight:700;
+                 padding:13px 13px 13px 25px;border:1.5px solid var(--krem-tua);border-radius:9px;
+                 font-family:inherit;}
+  .gerbang button{width:100%;margin-top:11px;background:var(--aksen);color:var(--krem);border:0;
+                  padding:14px;font-size:16px;font-weight:700;border-radius:10px;font-family:inherit;}
+  .gerbang .err{color:var(--aksen-2);font-size:13px;margin-top:11px;font-weight:600;}
+
+  .seksi{font-size:11px;color:var(--abu);text-transform:uppercase;letter-spacing:.6px;
+        font-weight:800;margin:20px 0 8px;}
+  .seksi:first-child{margin-top:0;}
+
+  .k{background:var(--putih);border-radius:12px;padding:16px;margin-bottom:12px;
+     box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .k .l{font-size:11px;color:var(--abu);text-transform:uppercase;letter-spacing:.5px;font-weight:700;}
+  .k .v{font-size:26px;font-weight:700;color:var(--aksen);margin-top:8px;line-height:1.15;}
+  .k .segar{font-size:11px;color:var(--abu);margin-top:8px;}
+  .k.utama .v{font-size:32px;}
+  .k.tak-tersedia .v{font-size:15px;color:var(--abu);font-weight:600;}
+
+  .pasangan-laba{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .pasangan-laba .k{margin-bottom:0;}
+  .k.kotor{border:2px solid var(--aksen-2);}
+  .k.kotor .lencana{display:inline-block;background:var(--aksen-2);color:var(--aksen-tua);
+                    font-size:9.5px;font-weight:800;letter-spacing:.3px;padding:2px 6px;
+                    border-radius:5px;margin-top:6px;}
+  .k.bersih{border:2px dashed var(--krem-tua);}
+  .k.bersih .v{font-size:15px;}
+  .catatan-kecil{font-size:11px;color:var(--abu);margin-top:8px;line-height:1.5;}
+
+  .op{display:flex;align-items:center;justify-content:space-between;background:var(--putih);
+     border-radius:12px;padding:14px 16px;margin-bottom:10px;}
+  .op .l{font-size:13px;font-weight:700;}
+  .op .r{font-size:13px;font-weight:700;color:var(--aksen);text-align:right;}
+  .op .r.perhatian{color:var(--merah);}
+  .op .sub{font-size:11px;color:var(--abu);margin-top:2px;}
+
+  .governance{font-size:11.5px;color:var(--abu);text-align:center;padding:16px 0 0;}
+
+  .kosong{text-align:center;color:var(--abu);padding:50px 16px;font-size:14px;line-height:1.8;}
+  .loading{text-align:center;padding:60px 16px;color:var(--abu);}
+</style>
+</head>
+<body>
+
+<div class="gerbang" id="gerbang">
+  <h2>SMJ ENTERPRISE OS</h2>
+  <p>Dashboard</p>
+  <div class="kotak">
+    <input id="pin" type="tel" inputmode="numeric" maxlength="8" placeholder="•••• PIN"
+           onkeyup="if(event.key==='Enter')masuk()">
+    <button id="btnMasuk" onclick="masuk()">Masuk</button>
+    <div class="err" id="pinErr"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <header>
+    <div class="judul">
+      <h1 id="hNama">—</h1>
+      <p id="hPeran">—</p>
+    </div>
+    <button class="keluar" onclick="location.reload()">Keluar</button>
+  </header>
+  <div class="tab-unit" id="tabUnit" style="display:none"></div>
+  <div class="tab-mode" id="tabMode" style="display:none">
+    <button id="btnModeKartu" class="aktif" onclick="gantiMode('kartu')">Kartu</button>
+    <button id="btnModeRiwayat" onclick="gantiMode('riwayat')">Riwayat Hari Ini</button>
+  </div>
+  <div class="wrap">
+    <div id="isi"><div class="loading">Memuat…</div></div>
+  </div>
+</div>
+
+<script>
+var LABEL_TIER = { ceo: 'CEO', owner: 'Owner', cashier: 'Kasir — Toko Sembako' };
+
+function el(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+function rp(n){ return 'Rp' + Number(n||0).toLocaleString('id-ID'); }
+function fmtTanggal(iso){
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'}); }
+  catch (e) { return iso; }
+}
+function fmtWaktu(iso){
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleString('id-ID', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}); }
+  catch (e) { return iso; }
+}
+
+var pinTersimpan = '';
+var resTerakhir = null;
+var modeTampilan = 'kartu';
+
+function masuk(){
+  var pin = (el('pin').value || '').trim();
+  if (!pin) return;
+  var b = el('btnMasuk');
+  b.disabled = true; b.textContent = 'Memeriksa…';
+  el('pinErr').textContent = '';
+  pinTersimpan = pin;
+  google.script.run
+    .withSuccessHandler(function(res){ bukaApp(res); })
+    .withFailureHandler(function(e){
+      el('pinErr').textContent = (e && e.message) ? e.message : String(e);
+      el('pin').value = ''; el('pin').focus();
+      b.disabled = false; b.textContent = 'Masuk';
+    })
+    .ambilDashboard(pin, null);
+}
+
+function bukaApp(res){
+  resTerakhir = res;
+  el('gerbang').style.display = 'none';
+  el('app').style.display = 'block';
+  document.body.setAttribute('data-unit', res.unitAktif);
+  el('hNama').textContent = res.nama;
+  el('hPeran').textContent = LABEL_TIER[res.tier] || res.tier;
+
+  if (res.unitTersedia.length > 1){
+    el('tabUnit').style.display = 'flex';
+    el('tabUnit').innerHTML = '';
+    res.unitTersedia.forEach(function(id){
+      var nama = (res.unitNama.filter(function(u){ return u.id === id; })[0] || {}).nama || id;
+      var btn = document.createElement('button');
+      btn.textContent = nama;
+      if (id === res.unitAktif) btn.classList.add('aktif');
+      btn.onclick = function(){ gantiUnit(id); };
+      el('tabUnit').appendChild(btn);
+    });
+  } else {
+    el('tabUnit').style.display = 'none';
+  }
+
+  // Riwayat Hari Ini hanya masuk akal untuk Toko Sembako (Central Kitchen
+  // belum punya bukti operasional apa pun) dan hanya untuk CEO/Owner.
+  modeTampilan = 'kartu';
+  el('btnModeKartu').classList.add('aktif');
+  el('btnModeRiwayat').classList.remove('aktif');
+  el('tabMode').style.display = (res.bolehRiwayat && res.unitAktif === 'tss') ? 'flex' : 'none';
+
+  render(res);
+}
+
+function gantiUnit(unitId){
+  el('isi').innerHTML = '<div class="loading">Memuat…</div>';
+  google.script.run
+    .withSuccessHandler(function(res){ bukaApp(res); })
+    .withFailureHandler(function(e){
+      el('isi').innerHTML = '<div class="kosong">' + esc((e && e.message) ? e.message : String(e)) + '</div>';
+    })
+    .ambilDashboard(pinTersimpan, unitId);
+}
+
+function gantiMode(mode){
+  modeTampilan = mode;
+  el('btnModeKartu').classList.toggle('aktif', mode === 'kartu');
+  el('btnModeRiwayat').classList.toggle('aktif', mode === 'riwayat');
+
+  if (mode === 'kartu'){
+    render(resTerakhir);
+    return;
+  }
+
+  el('isi').innerHTML = '<div class="loading">Memuat…</div>';
+  google.script.run
+    .withSuccessHandler(renderRiwayat)
+    .withFailureHandler(function(e){
+      el('isi').innerHTML = '<div class="kosong">' + esc((e && e.message) ? e.message : String(e)) + '</div>';
+    })
+    .ambilRiwayat(pinTersimpan);
+}
+
+function renderRiwayat(res){
+  var h = '';
+
+  // Responsibility Timeline — status SAAT INI per jendela, sebelum daftar
+  // kronologis. Ini yang menjawab "siapa yang bertanggung jawab sekarang",
+  // bukan cuma "apa yang sudah terjadi".
+  if (res.tanggungJawabSaatIni){
+    h += '<div class="tj-ringkas"><div class="judul">Tanggung Jawab Saat Ini</div>';
+    Object.keys(res.tanggungJawabSaatIni).forEach(function(jendela){
+      var tj = res.tanggungJawabSaatIni[jendela];
+      h += '<div class="tj-baris"><span class="jendela">' + esc(jendela) + '</span>' +
+        '<span class="siapa">' + (tj ? esc(tj.siapa) : 'Belum ada bukti') + '</span></div>';
+    });
+    h += '</div>';
+  }
+
+  if (!res.riwayat.length){
+    h += '<div class="kosong">Belum ada kejadian tercatat hari ini.</div>';
+    el('isi').innerHTML = h;
+    return;
+  }
+  var jendelaTerakhir = null;
+  res.riwayat.forEach(function(r){
+    if (r.jendela !== jendelaTerakhir){
+      h += '<div class="riwayat-jendela">' + esc(r.jendela || 'Di luar jam operasional') + '</div>';
+      jendelaTerakhir = r.jendela;
+    }
+    var jam = new Date(r.waktu).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+    h += '<div class="riwayat-item' + (r.perhatian ? ' perhatian' : '') + '">' +
+      '<div class="baris1"><span class="jam">' + esc(jam) + '</span>' +
+      '<span class="jenis" style="flex:1;margin:0 8px">' + esc(r.jenis) + '</span>' +
+      '<span class="status' + (r.perhatian ? ' perhatian' : '') + '">' + esc(r.status) + '</span></div>' +
+      '<div class="sub">' + esc(r.ringkasan) + '</div></div>';
+  });
+  el('isi').innerHTML = h;
+}
+
+function render(res){
+  if (!res.dataTersedia){
+    el('isi').innerHTML = '<div class="kosong">Data belum tersedia.<br><br>' + esc(res.alasanDataKosong) + '</div>';
+    return;
+  }
+
+  var kartuById = {};
+  res.kartu.forEach(function(k){ kartuById[k.id] = k; });
+
+  var h = '';
+
+  if (kartuById['todays-revenue']) h += '<div class="seksi">Finansial</div>' + renderUtama(kartuById['todays-revenue']);
+  if (kartuById['transaction-count']) h += renderBiasa(kartuById['transaction-count'], true);
+
+  if (kartuById['gross-profit'] || kartuById['net-profit']){
+    h += '<div class="pasangan-laba">' +
+      (kartuById['gross-profit'] ? renderKotor(kartuById['gross-profit']) : '') +
+      (kartuById['net-profit'] ? renderBersih(kartuById['net-profit']) : '') +
+    '</div>';
+  }
+
+  if (res.operasi && (res.operasi.pengiriman || res.operasi.shift || res.operasi.kas)){
+    h += '<div class="seksi">Operasi</div>';
+    if (res.operasi.pengiriman) h += renderPengiriman(res.operasi.pengiriman);
+    if (res.operasi.shift) h += renderShift(res.operasi.shift);
+    if (res.operasi.kas) h += renderKas(res.operasi.kas);
+  }
+
+  h += '<div class="governance">Data terakhir diperbarui: ' + esc(fmtWaktu(res.lastRefresh)) + '</div>';
+
+  el('isi').innerHTML = h;
+}
+
+function nilaiKartu(k){
+  if (k.status !== 'ok') return null;
+  if (k.id === 'transaction-count') return Number(k.value).toLocaleString('id-ID') + ' transaksi';
+  return rp(k.value);
+}
+function segarKartu(k){
+  if (k.status === 'ok' && k.dataFreshness && k.dataFreshness.latestDataDate){
+    return '<div class="segar">Per ' + esc(fmtTanggal(k.dataFreshness.latestDataDate)) + '</div>';
+  }
+  return '';
+}
+
+function renderUtama(k){
+  var nilai = nilaiKartu(k) || 'Belum tersedia';
+  return '<div class="k utama' + (k.status!=='ok'?' tak-tersedia':'') + '"><div class="l">' + esc(k.name) + '</div>' +
+         '<div class="v">' + nilai + '</div>' + segarKartu(k) + '</div>';
+}
+function renderBiasa(k){
+  var nilai = nilaiKartu(k) || 'Belum tersedia';
+  return '<div class="k' + (k.status!=='ok'?' tak-tersedia':'') + '"><div class="l">' + esc(k.name) + '</div>' +
+         '<div class="v">' + nilai + '</div>' + segarKartu(k) + '</div>';
+}
+function renderKotor(k){
+  var nilai = nilaiKartu(k) || 'Belum tersedia';
+  return '<div class="k kotor"><div class="l">' + esc(k.name) + '</div>' +
+         '<div class="v">' + nilai + '</div>' +
+         '<span class="lencana">LABA KOTOR</span></div>';
+}
+function renderBersih(k){
+  var tersedia = k.status === 'ok';
+  var nilai = tersedia ? rp(k.value) : 'Belum tersedia';
+  return '<div class="k bersih' + (tersedia?'':' tak-tersedia') + '"><div class="l">' + esc(k.name) + '</div>' +
+         '<div class="v">' + nilai + '</div>' +
+         (!tersedia ? '<div class="catatan-kecil">' + esc(k.caveat || '') + '</div>' : '') +
+         '</div>';
+}
+
+function renderPengiriman(p){
+  if (!p.ada){
+    return '<div class="op"><div class="l">Pengiriman</div><div class="r">Belum tersedia</div></div>';
+  }
+  if (p.total === 0){
+    return '<div class="op"><div class="l">Pengiriman</div><div class="r">Belum ada hari ini</div></div>';
+  }
+  var kelas = p.menunggu > 0 ? 'perhatian' : '';
+  return '<div class="op"><div><div class="l">Pengiriman</div>' +
+    '<div class="sub">' + p.selesai + ' dari ' + p.total + ' sudah sampai</div></div>' +
+    '<div class="r ' + kelas + '">' + (p.menunggu > 0 ? p.menunggu + ' menunggu' : 'Selesai') + '</div></div>';
+}
+
+function renderShift(s){
+  if (!s.ada){
+    return '<div class="op"><div class="l">Shift</div><div class="r">Belum tersedia</div></div>';
+  }
+  if (!s.ditutup){
+    return '<div class="op"><div class="l">Shift</div><div class="r">Belum ditutup</div></div>';
+  }
+  var wajar = String(s.status).toUpperCase() === 'WAJAR';
+  return '<div class="op"><div><div class="l">Shift</div><div class="sub">' + esc(s.kasir) + '</div></div>' +
+    '<div class="r ' + (wajar ? '' : 'perhatian') + '">' + esc(s.status) + '</div></div>';
+}
+
+function renderKas(k){
+  if (!k.ada){
+    return '<div class="op"><div class="l">Kas</div><div class="r">Belum tersedia</div></div>';
+  }
+  var label = k.belumHariIni ? ('Per ' + esc(fmtTanggal(k.tanggalTerakhir))) : 'Kas Kasir / Kas Tunai';
+  var kelas = Number(k.selisih) !== 0 ? 'perhatian' : '';
+  return '<div class="op"><div><div class="l">Kas</div><div class="sub">' + label + '</div></div>' +
+    '<div class="r ' + kelas + '">' + rp(k.kasKasir) + ' / ' + rp(k.kasTunai) + '</div></div>';
+}
+
+el('pin').focus();
+</script>
+</body>
+</html>

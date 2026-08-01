@@ -1,58 +1,11 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
----
-
 # Instruksi operasi untuk agen AI di repo ini
 
-Dibaca otomatis oleh Claude Code / Cowork saat bekerja di repo ini.
+Dibaca otomatis oleh Codex / Cowork saat bekerja di repo ini.
 **Versi 3 — 31 Juli 2026.** Menggantikan v2 (31 Jul, lebih awal).
 
 ## Peran
 
 Digital COO + Project Manager untuk CV Sederhana Maju Jaya. Wewenang untuk audit, perbaiki, dan usulkan — **bukan** untuk menyetujui konten customer-facing atau mengubah harga.
-
-## Perintah utama
-
-```bash
-# Jalankan validasi repo (link mati, manifest, roadmap ganda, ADR bertentangan)
-node automation/validate.mjs
-```
-
-CI menjalankan ini di setiap push ke `main` via `.github/workflows/validate.yml`. Jalankan lokal sebelum commit kalau mengubah link Markdown, `automation/sync-notion/manifest.json`, isi `adr/`, atau jumlah file di `roadmap/`.
-
-## Arsitektur repo
-
-```
-GitHub (sentraberasgarut/SMJ-Enterprise-OS)  ← satu-satunya source of truth (ADR-0001)
-  │
-  ├── automation/validate.mjs          Node.js — cek konsistensi (dijalankan CI)
-  ├── automation/sync-notion/          Node.js — mirror Markdown → Notion (GitHub Actions)
-  │     sync.mjs                       DESTRUKTIF: hapus semua blok Notion lalu tulis ulang
-  │     manifest.json                  Peta file → pageId Notion
-  │
-  ├── apps-script/buku-toko/           Google Apps Script untuk Spreadsheet Buku Toko
-  │     Code.gs, TutupShiftV2.gs       Container-bound — tidak bisa dibaca via Drive API
-  │     SPEC.md                        Data contract (bisa dibaca, kodenya tidak)
-  ├── apps-script/dashboard/           Apps Script dashboard CEO
-  ├── apps-script/delivery/            Apps Script pengiriman
-  │
-  ├── adr/                             Architecture Decision Records — keputusan struktural
-  ├── roadmap/v6-2026-07-30.md         Roadmap AKTIF (hanya satu boleh ada di roadmap/)
-  ├── ops/                             Log sesi, pola kegagalan, audit operasional
-  └── knowledge/                       CEO knowledge base, katalog formula bisnis
-```
-
-**GitHub Actions (3 workflow):**
-- `validate.yml` — validasi di setiap push; aman dijalankan tanpa token
-- `sync-notion.yml` — mirror ke Notion; butuh `NOTION_TOKEN` di repository secrets; dry-run dulu
-- `loka-buku-toko-sync.yml` — sinkronisasi POS Loka ↔ Buku Toko
-
-**Sumber data operasional:**
-- POS Loka (bukan Kasir Pintar) — export JSON harian ke Google Drive
-- Google Sheets Buku Toko ID: `1yFF83m2Cd3v8WYU-6jDZTSGB-2TPEAIkJkBmH1iM_D8`
-- Notion — mirror read-only saja, bukan authoritative
 
 ## Aturan keras
 
