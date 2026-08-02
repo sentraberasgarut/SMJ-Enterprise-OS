@@ -2,10 +2,49 @@
 
 | | |
 | --- | --- |
-| **Status** | Proposed — pending CEO decision |
+| **Status** | **Diterima — dengan amandemen 1 Agustus 2026** |
 | **Date** | 31 July 2026 |
+| **Accepted** | 1 Agustus 2026 — CEO (Aditya) |
 | **Proposed by** | Claude (agent), on behalf of no one — CEO decides |
 | **Relates to** | [ADR-0001](0001-github-authoritative-notion-mirror.md) (repo as source of truth for docs/code) — this ADR extends the same principle to operational data. [ADR-0002](0002-dana-ibu-adalah-modal-bukan-hutang.md) unaffected. |
+
+---
+
+## Amandemen 1 Agustus 2026 — Revisi sebelum diterima
+
+Dua koreksi yang ditetapkan CEO sebelum ADR ini diterima. Isi §1–§6 di bawah tetap berlaku kecuali yang secara eksplisit diubah di sini.
+
+### Koreksi 1 — Buku Toko adalah Enterprise OS, bukan sekadar consumer
+
+Versi awal ADR ini menempatkan Buku Toko sebagai salah satu dari banyak consumer canonical layer, setara dengan dashboard dan agen AI. **Ini salah.**
+
+Buku Toko adalah **Enterprise OS** — sistem operasional grup yang akan berkembang dari Apps Script ke aplikasi yang lebih lengkap sesuai kebutuhan operasional nyata, dengan model pertumbuhan seperti Odoo: fitur muncul dari masalah operasional yang terbukti, bukan dari roadmap fitur.
+
+Konsekuensi arsitektur:
+- Canonical layer bukan hanya feed ke Buku Toko — Buku Toko **adalah** tujuan utamanya. Semua consumer lain (AI agents, n8n, laporan) adalah turunan.
+- Schema canonical harus dirancang untuk melayani sistem operasional yang tumbuh, bukan untuk dibaca oleh spreadsheet. Artinya lebih dekat ke data model relasional daripada flat JSON export.
+- Consumer Isolation Principle menjadi lebih kritis, bukan lebih longgar: saat Buku Toko berevolusi dari Apps Script ke web app, canonical layer tidak boleh ikut berubah — ini yang memungkinkan migrasi runtime tanpa kehilangan data.
+- **Runtime Apps Script adalah implementasi saat ini, bukan arsitektur final.** Keputusan teknologi Apps Script tidak perlu dipertahankan hanya karena sudah jalan — tapi juga tidak perlu diganti sebelum ada kebutuhan operasional yang membuktikannya kurang.
+
+Revisi table authoritative sources:
+
+| Authoritative Source | Authoritative for |
+| --- | --- |
+| **Loka POS** | Transaksi penjualan retail |
+| **Buku Toko (Enterprise OS)** | Operasional grup: logistik, kas, shift, katalog, piutang, hutang — dan semua yang akan ditambahkan seiring tumbuh |
+| **GitHub Repository** | Kode, ADR, dokumentasi, spesifikasi, automation |
+
+### Koreksi 2 — Loka `Expense` adalah satu-satunya sumber beban operasional
+
+Sheet `BEBAN` di Buku Toko **belum pernah digunakan** dan bukan sumber data nyata. Loka `Expense` entity adalah sumber otoritatif untuk seluruh pencatatan beban operasional.
+
+- Sheet `BEBAN` di Buku Toko harus dihapus (CEO yang menghapus — tool tidak bisa hapus dari Sheets).
+- `_bebanBulan()` di Apps Script harus membaca dari canonical layer (Loka `Expense`), bukan dari sheet `BEBAN`.
+- Ini membuka BL-001 dan BL-002 untuk langsung dikerjakan tanpa keputusan tambahan.
+
+Bukti: prototype `loka-canonical-poc` mengekstrak 45 `Expense` records senilai Rp18.517.444 dari backup 30 Jul — data ini sudah ada di sumber, hanya belum diwiring ke dashboard.
+
+---
 
 ---
 

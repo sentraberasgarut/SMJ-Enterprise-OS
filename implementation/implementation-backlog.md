@@ -14,12 +14,13 @@ Every item below is actionable on its own. None require a new ADR, architecture 
 
 ### BL-001 — Wire Loka Expense data into the Net Profit calculation
 
-- **Description:** `_bebanBulan()` (documented in `PATCH-01-performa-dan-dashboard.md`) only reads a separate `BEBAN` sheet and returns 0 if it has no matching rows for the current month. Loka's own `Expense` entity already contains real data (45 records for July, Rp18,517,444, proven via `prototype/loka-canonical-poc`). Wire the real figure in, or explicitly decide the `BEBAN` sheet is the sole intended source and start populating it.
-- **Business Value:** Unblocks Net Profit being computable at all. Currently the dashboard's own design assumes expenses are untracked "anywhere," which is false.
-- **Technical Dependency:** `enterprise-data/canonical/expenses.md`; the canonical prototype's `Expense` normalization (already working).
+- **Description:** `_bebanBulan()` (documented in `PATCH-01-performa-dan-dashboard.md`) only reads a separate `BEBAN` sheet and returns 0. Loka's `Expense` entity contains real data (45 records for July, Rp18,517,444, proven via `prototype/loka-canonical-poc`).
+- **Decision made (1 Agt 2026):** Loka `Expense` is the authoritative source. Sheet `BEBAN` di Buku Toko **tidak pernah digunakan dan harus dihapus** (manual — CEO delete dari Sheets).
+- **Business Value:** Unblocks Net Profit being computable at all.
+- **Technical Dependency:** Canonical pipeline (BL-008 resolved). `_bebanBulan()` reads from `canonical/latest.json → summary.totalExpenses`.
 - **Estimated Complexity:** Low.
-- **Blocking Issues:** None technical. Requires a decision on which source (Loka `Expense` vs. Buku Toko `BEBAN`) is authoritative going forward — a decision, not an engineering blocker.
-- **Acceptance Criteria:** `_bebanBulan()` (or its successor) returns a non-zero, traceable figure for a month with real recorded expenses; the figure is traceable to either Loka's `Expense` entity or a populated `BEBAN` sheet, not silently defaulted to zero.
+- **Blocking Issues:** ~~Requires a decision on source~~ — decided. ~~Sheet `BEBAN` deletion~~ — **deleted 1 Agt 2026 (CEO)**. **Tidak ada blocker tersisa.**
+- **Acceptance Criteria:** `_bebanBulan()` returns Rp18,517,444 (or current month equivalent) traced to Loka `Expense`; net profit dashboard shows negative figure for July 2026 consistent with −Rp1,4 jt finding.
 
 ### BL-002 — Fix Gross/Net Profit dashboard labeling
 
@@ -81,12 +82,10 @@ Every item below is actionable on its own. None require a new ADR, architecture 
 
 ### BL-008 — CEO decision on ADR-0003 and ADR-0004
 
-- **Description:** Both ADRs remain "Proposed," not "Accepted." Every "B" classification in `dashboard-refactor-plan.md` assumes a Canonical Data Layer that does not yet formally exist as accepted architecture.
-- **Business Value:** High — unblocks confident sequencing of every canonical-data-dependent item in this backlog.
-- **Technical Dependency:** None — this is a decision, not a build.
-- **Estimated Complexity:** N/A.
-- **Blocking Issues:** This item blocks BL-001, BL-006, BL-007, BL-009, BL-010, BL-012, and indirectly the entire "B"-classified set in the refactor plan.
-- **Acceptance Criteria:** CEO has explicitly accepted, rejected, or amended ADR-0003 and ADR-0004.
+- **Status: ✅ SELESAI — 1 Agustus 2026**
+- ADR-0003 diterima dengan amandemen: Buku Toko adalah Enterprise OS (bukan sekadar consumer); Loka `Expense` otoritatif untuk beban; sheet `BEBAN` dihapus.
+- ADR-0004 diterima tanpa amandemen.
+- **Terbuka:** BL-001, BL-006, BL-007, BL-009, BL-010, BL-012 sekarang tidak diblokir keputusan ini.
 
 ### BL-009 — Resolve Product Authoritative Source conflict
 

@@ -2,8 +2,9 @@
 
 | | |
 | --- | --- |
-| **Status** | Proposed — pending CEO decision |
+| **Status** | **Diterima — 1 Agustus 2026** |
 | **Date** | 31 July 2026 |
+| **Accepted** | 1 Agustus 2026 — CEO (Aditya) |
 | **Proposed by** | Claude (agent), on behalf of no one — CEO decides |
 | **Relates to** | [ADR-0001](0001-github-authoritative-notion-mirror.md), [ADR-0002](0002-dana-ibu-adalah-modal-bukan-hutang.md), [ADR-0003](0003-canonical-data-platform-loka-pos.md) — this ADR generalizes lessons those three already paid for into standing principles, so future technology decisions don't have to re-learn them one system at a time. |
 
@@ -73,4 +74,4 @@ A proposal that can't answer these isn't ready for a decision — it's ready for
 
 Future ADRs, technology proposals, or backlog items that touch tooling should be checked against the ten principles above, the same way ADR-0001 and ADR-0002 already established that reversing a decision requires a new ADR that names the one it changes. This ADR does not override ADR-0001, ADR-0002, or ADR-0003 — it sits above them as the reasoning those three already followed, made explicit and durable.
 
-**Status:** Proposed, not accepted. Per the pattern already set by ADR-0001 through ADR-0003 — the agent proposes, the CEO decides. This ADR is not binding until the CEO confirms it.
+**Status:** Diterima 1 Agustus 2026. Berlaku sebagai standing rules untuk semua keputusan teknologi ke depan.
