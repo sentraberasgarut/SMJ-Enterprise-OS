@@ -3,7 +3,7 @@
 **1 Agustus 2026. Reviewer perspective: Product Engineer, bukan hanya Software Engineer.**
 **Tidak ada kode yang diubah dalam sprint ini. Review saja.**
 
-Scope: tiga file yang dibuat di Increment 1 — [`apps-script/dashboard/Code.gs`](../apps-script/dashboard/Code.gs), [`apps-script/dashboard/Index.html`](../apps-script/dashboard/Index.html), [`apps-script/dashboard/appsscripts.json`](../apps-script/dashboard/appsscripts.json) — dievaluasi terhadap dataset real yang sudah ada di `prototype/loka-canonical-poc/output/dashboard-dataset.json`, terhadap `src/dataset/roles.js`, dan terhadap aturan repo di `CLAUDE.md`.
+Scope: tiga file yang dibuat di Increment 1 — [`archive/apps-script/dashboard/Code.gs`](../archive/apps-script/dashboard/Code.gs), [`archive/apps-script/dashboard/Index.html`](../archive/apps-script/dashboard/Index.html), [`archive/apps-script/dashboard/appsscripts.json`](../archive/apps-script/dashboard/appsscripts.json) — dievaluasi terhadap dataset real yang sudah ada di `prototype/loka-canonical-poc/output/dashboard-dataset.json`, terhadap `src/dataset/roles.js`, dan terhadap aturan repo di `CLAUDE.md`.
 
 ---
 

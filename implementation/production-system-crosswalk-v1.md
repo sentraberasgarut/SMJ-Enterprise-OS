@@ -70,7 +70,7 @@
 | Aspek | Detail |
 |---|---|
 | **Folder Drive dipakai** | `Loka Kasir` → sub `JSON` (`FOLDER_LOKA_JSON`, dibaca `hitungRingkasLoka`) — file `loka-YYYY-MM-DD.json` terbaru dipilih otomatis. `Buku Toko - Bukti Tutup Shift` (`FOLDER_BUKTI`, dibuat otomatis kalau belum ada) — foto tutup shift, path `YYYY-MM/YYYY-MM-DD_<Nama>_<jenis>.jpg`. |
-| **Script Properties dipakai** | `FOLDER_LOKA_JSON_ID`, `FOLDER_BUKTI_ID` (cache ID folder — pola yang sama persis ditiru di [`apps-script/dashboard/Code.gs`](../apps-script/dashboard/Code.gs) untuk `FOLDER_DATASET_ID`), `TAB_REKAP_SJ4` (cache nama tab di spreadsheet CK eksternal). |
+| **Script Properties dipakai** | `FOLDER_LOKA_JSON_ID`, `FOLDER_BUKTI_ID` (cache ID folder — pola yang sama persis ditiru di [`archive/apps-script/dashboard/Code.gs`](../archive/apps-script/dashboard/Code.gs) untuk `FOLDER_DATASET_ID`), `TAB_REKAP_SJ4` (cache nama tab di spreadsheet CK eksternal). |
 | **Document Properties** | 1 pemakaian, di `setBrankasMenu` — beda namespace dari Script Properties, tidak dicek di tempat lain. |
 | **Trigger terjadwal** (dipasang oleh `setup()`, sekali jalan manual) | `rekapHarian` @21:00 · `kirimPOMalam` @23:00 · `hitungRingkasLoka` @20:00 · `cekHarianKas` @07:00 |
 | **Email (`MailApp`)** | `_kabarHarga`, `_kabarPO`, `_kabarShift`, `_kirimAlarm`, `cekHarianKas` — semua ke alamat Google Workspace pemilik skrip, bukan ke pelanggan. |
