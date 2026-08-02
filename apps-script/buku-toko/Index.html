@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <!--
   Buku Toko Sembako & Central Kitchen — Index.html
-  VERSI 2.1 · 30 Juli 2026
+  VERSI 3.0 · 2 Agustus 2026
 
   TIMPA SELURUH ISI Index.html dengan file ini.
 
@@ -288,6 +288,132 @@
   .jenjang.a{background:#E9F0E3;color:var(--hijau-tua);}
   .jenjang.b{background:#FFF6E5;color:#7A5200;}
   .jenjang.c{background:#FBEAE6;color:#8A2E1D;}
+
+  /* ===== v3.0 ENHANCEMENTS ===== */
+  :root {
+    --shadow-card: 0 4px 20px rgba(62,76,52,0.10);
+    --shadow-pop:  0 8px 32px rgba(62,76,52,0.18);
+    --grad-header: linear-gradient(140deg, #4F6042 0%, #3E4C34 100%);
+    --grad-utama:  linear-gradient(140deg, #4F6042 0%, #6E8158 100%);
+    --grad-emas:   linear-gradient(140deg, #E8A22C 0%, #C98B1A 100%);
+  }
+  @keyframes fadeMasuk {
+    from { opacity:0; transform:translateY(10px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  @keyframes slideAtas {
+    from { opacity:0; transform:translateY(-16px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  @keyframes pulseMerah {
+    0%,100% { box-shadow:0 0 0 0 rgba(179,69,47,0); }
+    60%     { box-shadow:0 0 0 7px rgba(179,69,47,0.18); }
+  }
+  @keyframes gerakBar {
+    from { width:0; }
+  }
+
+  .wrap > div { animation: fadeMasuk 0.22s ease-out both; }
+
+  header { background: var(--grad-header); }
+  header h1 { letter-spacing: 0.8px; }
+
+  .card {
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.2s;
+  }
+
+  .kpi .b {
+    box-shadow: var(--shadow-card);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .kpi .b:active { transform:scale(0.97); }
+  .kpi .b.utama {
+    background: var(--grad-utama);
+    box-shadow: 0 6px 24px rgba(62,76,52,0.22);
+  }
+  .kpi .b.utama .v { font-size:28px; letter-spacing:-0.5px; }
+
+  .met { box-shadow: var(--shadow-card); }
+  .prog { box-shadow: var(--shadow-card); }
+  .prog .rel i { animation: gerakBar 0.8s ease-out; }
+
+  .tindak { box-shadow: var(--shadow-card); }
+  .tindak .t.bad { border-left:3px solid var(--merah); padding-left:11px; }
+
+  .tombol { transition: box-shadow 0.15s, transform 0.12s; }
+  .tombol:active { transform:scale(0.98); box-shadow: var(--shadow-pop); }
+
+  button.aksi { transition: filter 0.15s, transform 0.1s; }
+  button.aksi:active:not(:disabled) { transform:scale(0.98); filter:brightness(0.93); }
+
+  /* Notification toast */
+  .toast-wrap {
+    position:fixed; top:68px; left:0; right:0; z-index:999;
+    display:flex; flex-direction:column; align-items:center;
+    gap:8px; pointer-events:none;
+  }
+  .toast {
+    pointer-events:auto; max-width:92vw; min-width:220px;
+    padding:13px 18px; border-radius:12px;
+    font-size:13.5px; font-weight:600; line-height:1.4;
+    box-shadow: var(--shadow-pop);
+    animation: slideAtas 0.25s ease-out;
+    text-align:center;
+  }
+  .toast.darurat { background:var(--merah); color:#fff; animation:pulseMerah 2s infinite, slideAtas 0.25s ease-out; }
+  .toast.warn  { background:var(--emas); color:#3A2A08; }
+  .toast.ok    { background:#2E7D32; color:#fff; }
+  .toast.info  { background:var(--hijau); color:var(--krem); }
+
+  /* Date range selector */
+  .rentang {
+    display:flex; gap:7px; overflow-x:auto; padding:0 0 12px;
+    scrollbar-width:none;
+  }
+  .rentang::-webkit-scrollbar { display:none; }
+  .rentang button {
+    flex:none; padding:8px 15px; border-radius:20px;
+    border:1.5px solid var(--krem-tua); background:var(--putih);
+    color:var(--abu); font-size:12.5px; font-weight:600;
+    font-family:inherit; cursor:pointer; transition:all 0.15s;
+    white-space:nowrap;
+  }
+  .rentang button.on {
+    background:var(--hijau); color:var(--krem);
+    border-color:var(--hijau); box-shadow:0 2px 8px rgba(79,96,66,0.25);
+  }
+  .rentang input[type="date"] {
+    flex:none; width:auto; padding:7px 11px; max-width:140px;
+    border-radius:20px; border:1.5px solid var(--krem-tua);
+    font-size:12px; font-family:inherit; color:var(--abu); background:var(--putih);
+  }
+
+  /* Satuan pill in item list */
+  .satuan-pill {
+    display:inline-block; background:var(--hijau); color:var(--krem);
+    font-size:9px; font-weight:800; letter-spacing:0.5px;
+    padding:2px 7px; border-radius:10px; margin-left:5px;
+    text-transform:uppercase; vertical-align:middle;
+  }
+
+  /* Kelola satuan select */
+  .satuan-wrap { display:flex; gap:8px; }
+  .satuan-wrap select { flex:1; }
+  .satuan-wrap input { flex:1; }
+
+  /* Deposit notice */
+  .deposit-req {
+    background:#FFF6E5; border-left:4px solid var(--emas);
+    border-radius:8px; padding:10px 13px; margin:8px 0 0;
+    font-size:13px; color:#7A5200; font-weight:600; line-height:1.4;
+  }
+
+  /* Wajib indicator on foto row */
+  .foto.wajib .nm span { color:var(--merah); font-weight:700; }
+  .foto.wajib.ada .nm span { color:var(--hijau); font-weight:600; }
+
+  .judulbag { font-size:11.5px; }
 </style>
 </head>
 <body>
@@ -312,6 +438,9 @@
     <div class="err" id="pinErr"></div>
   </div>
 </div>
+
+<!-- ============ TOAST NOTIFIKASI ============ -->
+<div class="toast-wrap" id="toastWrap"></div>
 
 <!-- ============ APLIKASI ============ -->
 <div id="app" style="display:none">
@@ -351,6 +480,7 @@ var QTY = {}, HARGA_BARU = {};
 var UNIT_KIRIM = 'TSS';
 var UNIT_HARGA = 'MASTER';       // BARU: harga toko atau harga dapur
 var FILTER = 'SEMUA', CARI = '';
+var DASHBOARD_DATA = null, RENTANG = 'hari', RENTANG_TGL = '';
 
 var LAYAR = {
   dashTSS: { judul:'Toko Sembako', ket:'Kondisi Toko Sembako Sejahtera' },
@@ -360,7 +490,7 @@ var LAYAR = {
   shift:   { judul:'Tutup Shift',        ket:'Setoran uang per dompet + foto bukti' },
   riwayat: { judul:'Riwayat Hari Ini',   ket:'Lihat pengiriman hari ini' },
   harga:   { judul:'Ubah Harga',         ket:'Perbarui daftar harga barang' },
-  kelola:  { judul:'Kelola',             ket:'Tambah barang, tambah orang, catat beban' }
+  kelola:  { judul:'Kelola',             ket:'Tambah barang, tambah orang, batalkan kiriman' }
 };
 
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
@@ -414,6 +544,87 @@ function panggil(nama, args, sukses, detik, gagalKhusus){
   r[nama].apply(r, args);
 }
 
+/* ==================== NOTIFIKASI ==================== */
+
+var _toastTimer = null;
+function notif(teks, tipe) {
+  var wrap = el('toastWrap');
+  if (!wrap) return;
+  var t = document.createElement('div');
+  t.className = 'toast ' + (tipe || 'info');
+  t.textContent = teks;
+  wrap.appendChild(t);
+  // Web Notification kalau izin sudah diberikan
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    try { new Notification('Buku Toko', { body: teks }); } catch(e) {}
+  }
+  setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 5000);
+}
+
+function mintaIzinNotif() {
+  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function cekNotifUrgent(d) {
+  if (!d || !d.tindak) return;
+  var darurat = d.tindak.filter(function(t){ return t.jenis === 'bad'; });
+  if (darurat.length) {
+    notif('⚠ ' + darurat.length + ' hal kritis perlu ditindaklanjuti', 'darurat');
+  }
+}
+
+/* ==================== DASHBOARD DATE RANGE ==================== */
+
+function pilihRentang(r, tgl) {
+  RENTANG = r;
+  if (tgl) RENTANG_TGL = tgl;
+  if (DASHBOARD_DATA) renderDash(DASHBOARD_DATA);
+}
+
+function _dataRentang(d, rentang, tglCustom) {
+  var L = d.loka;
+  if (!L || !L.ada) return null;
+  var hari = d.tanggal;
+
+  if (rentang === 'hari') return d.hariIni;
+
+  if (rentang === 'kemarin') {
+    var dt = new Date(hari + 'T00:00:00');
+    dt.setDate(dt.getDate() - 1);
+    var kmrTgl = dt.toISOString().slice(0, 10);
+    var g = (L.grafik || []).filter(function(x){ return x.tgl === kmrTgl; })[0];
+    return g ? { omzet: g.omzet, laba: g.laba, trx: 1 } : { omzet: 0, laba: 0, trx: 0 };
+  }
+
+  if (rentang === 'minggu') {
+    var minggu = (L.grafik || []).slice(-7);
+    return minggu.reduce(function(a, g) {
+      return { omzet: a.omzet + g.omzet, laba: a.laba + g.laba, trx: a.trx + 1 };
+    }, { omzet: 0, laba: 0, trx: 0 });
+  }
+
+  if (rentang === 'bulan') {
+    return { omzet: L.bulanIni.omzet, laba: L.bulanIni.laba, trx: L.bulanIni.trx };
+  }
+
+  if (rentang === 'custom' && tglCustom) {
+    var gc = (L.grafik || []).filter(function(x){ return x.tgl === tglCustom; })[0];
+    return gc ? { omzet: gc.omzet, laba: gc.laba, trx: 1 } : { omzet: 0, laba: 0, trx: 0 };
+  }
+
+  return d.hariIni;
+}
+
+function _labelRentang(rentang, tglCustom) {
+  if (rentang === 'kemarin') return 'Kemarin';
+  if (rentang === 'minggu')  return '7 Hari Terakhir';
+  if (rentang === 'bulan')   return 'Bulan Ini';
+  if (rentang === 'custom' && tglCustom) return tglCustom;
+  return 'Hari Ini';
+}
+
 /* ==================== MASUK ==================== */
 
 function cekPin(){
@@ -438,7 +649,9 @@ function masukApp(){
   el('hNama').textContent = AKU.nama.toUpperCase();
   el('hPeran').textContent = AKU.peran.charAt(0)+AKU.peran.slice(1).toLowerCase()
                            + (AKU.unitNama && AKU.unit!=='-' ? ' · '+AKU.unitNama : '');
+  DASHBOARD_DATA = null; RENTANG = 'hari'; RENTANG_TGL = '';
   gambarTab();
+  mintaIzinNotif();
   ke(AKU.menu.length && AKU.menu[0].indexOf('dash')===0 ? AKU.menu[0] : 'beranda');
 }
 
@@ -600,7 +813,7 @@ function daftar(){
     h += '<div class="item'+(q>0?' isi':(baru?' baru':''))+'" id="it'+i+'">'
        +   '<div class="nm"><b>'+esc(it.nama)+(baru?'<span class="badge">BARU</span>':'')+'</b>'
        +   '<span>'+(cek?'<span class="cek">harga belum diisi</span>'
-                        :rp(it.harga)+' / '+esc(it.satuan))+'</span></div>'
+                        :rp(it.harga)+'<span class="satuan-pill">'+esc(it.satuan)+'</span>')+'</span></div>'
        +   '<div class="step"><button type="button" onclick="ubah('+i+',-1)">−</button>'
        +     '<input type="number" inputmode="decimal" min="0" step="any" id="q'+i+'" '
        +       'value="'+q+'" placeholder="0" oninput="ketik('+i+')">'
@@ -871,7 +1084,12 @@ function gambarKelola(){
       +   '<div class="field"><label>Kategori</label>'
       +     '<input id="kb_kat" placeholder="Beras / Bahan Dapur / …"></div>'
       +   '<div class="field" style="max-width:130px"><label>Satuan</label>'
-      +     '<input id="kb_satuan" placeholder="karung / kg"></div>'
+      +     '<select id="kb_satuan">'
+      +     '<option value="kg">kg</option><option value="ball">ball</option>'
+      +     '<option value="karung">karung</option><option value="pack">pack</option>'
+      +     '<option value="karton">karton</option><option value="dus">dus</option>'
+      +     '<option value="pcs">pcs</option><option value="krtn">krtn</option>'
+      +     '<option value="renceng">renceng</option></select></div>'
       + '</div>'
       + '<div class="field"><label>Harga (boleh 0 dulu)</label>'
       +   inpUang('kb_harga','')+'</div>'
@@ -901,22 +1119,17 @@ function gambarKelola(){
       + '<b>Sampaikan PIN langsung ke orangnya, jangan lewat grup.</b></div></div>';
   }
   else if (KELOLA === 'beban'){
-    h = '<div class="msg peringatan"><b>Kenapa ini penting.</b><br>'
-      + 'Selama beban belum dicatat, dashboard hanya bisa menampilkan <b>laba kotor</b>. '
-      + 'Juli 2026: laba kotor Rp14,5 jt tapi laba bersih MINUS Rp1,4 jt.</div>'
+    h = '<div class="msg ok"><b>Beban tercatat otomatis dari Loka POS.</b><br>'
+      + 'Data pengeluaran diambil langsung dari backup Loka harian — tidak perlu dicatat manual di sini.</div>'
       + '<div class="card">'
-      + '<div class="row">'
-      +   '<div class="field"><label>Jenis</label><select id="kn_jenis">'
-      +     '<option>Gaji</option><option>Sewa</option><option>Listrik</option>'
-      +     '<option>Transport</option><option>Susut</option><option>Lain</option></select></div>'
-      +   '<div class="field"><label>Tanggal</label>'
-      +     '<input type="date" id="kn_tgl"></div>'
+      + '<div class="kat">Cara memperbarui angka beban</div>'
+      + '<div class="baris"><span>1. Pastikan backup Loka hari ini sudah diekspor ke Drive</span></div>'
+      + '<div class="baris"><span>2. Buka Dashboard TSS → tekan "Hitung Data Loka"</span></div>'
+      + '<div class="baris"><span>3. Angka beban dan laba bersih otomatis diperbarui</span></div>'
       + '</div>'
-      + '<div class="field"><label>Keterangan</label>'
-      +   '<input id="kn_ket" placeholder="Contoh: gaji Ayu Juli"></div>'
-      + '<div class="field"><label>Nilai</label>'+inpUang('kn_nilai','')+'</div>'
-      + '<button class="aksi" style="width:100%" onclick="simpanBeban()" '
-      +   'id="kn_btn">Catat Beban</button></div>';
+      + '<div class="msg peringatan"><b>Catatan Juli 2026</b><br>'
+      + 'Laba kotor Rp14,5 jt — laba bersih MINUS Rp1,4 jt. '
+      + 'Perbedaan ini adalah beban operasional (gaji, listrik, transport, dll.) yang sudah tercatat di Loka POS.</div>';
   }
   else {
     h = '<div class="msg peringatan"><b>Hati-hati.</b><br>'
@@ -935,11 +1148,6 @@ function gambarKelola(){
       +   'id="kx_btn">Batalkan Kiriman</button></div>';
   }
   el('isiKelola').innerHTML = h;
-  if (KELOLA === 'beban' && el('kn_tgl')){
-    var t = new Date();
-    el('kn_tgl').value = t.getFullYear()+'-'
-      + String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
-  }
 }
 
 function tombolSibuk(id, teks){
@@ -982,17 +1190,9 @@ function simpanOrangBaru(){
 }
 
 function simpanBeban(){
-  tombolSibuk('kn_btn');
-  panggil('catatBeban', [PIN, {
-    jenis: el('kn_jenis').value, keterangan: el('kn_ket').value,
-    nilai: nilaiUang('kn_nilai'), tanggal: el('kn_tgl').value
-  }], function(r){
-    el('pesan').innerHTML = '<div class="msg ok"><b>Beban tercatat.</b><br>'
-      + esc(r.jenis)+' — '+esc(r.nilaiRp)+' pada '+esc(r.tanggal)+'</div>';
-    window.scrollTo(0,0);
-    tombolPulih('kn_btn');
-    el('kn_ket').value=''; el('kn_nilai').value='';
-  }, 45, function(e){ tombolPulih('kn_btn'); gagal(e); });
+  el('pesan').innerHTML = '<div class="msg peringatan"><b>Catat pengeluaran di Loka POS.</b><br>'
+    + 'Data beban diambil otomatis dari backup Loka harian. Jalankan "Hitung Data Loka" dari Dashboard TSS setelah ekspor.</div>';
+  window.scrollTo(0, 0);
 }
 
 function batalkanKrm(){
@@ -1104,7 +1304,11 @@ function renderCK(d){
 
 function muatDashboard(){
   el('isi').innerHTML = '<div class="loading">Memuat…</div>';
-  panggil('dashboard', [PIN], renderDash, 45);
+  panggil('dashboard', [PIN], function(d){
+    DASHBOARD_DATA = d;
+    renderDash(d);
+    cekNotifUrgent(d);
+  }, 45);
 }
 
 function hitungLoka(){
@@ -1133,13 +1337,25 @@ function renderDash(d){
        + 'onclick="hitungLoka()">Hitung sekarang</button>';
   }
 
-  // ===== 1. KONDISI HARI INI =====
+  // ===== 1. RINGKASAN PERIODE =====
+  h += '<div class="rentang">'
+     + '<button class="'+(RENTANG==='hari'?'on':'')+'" onclick="pilihRentang(\'hari\')">Hari Ini</button>'
+     + '<button class="'+(RENTANG==='kemarin'?'on':'')+'" onclick="pilihRentang(\'kemarin\')">Kemarin</button>'
+     + '<button class="'+(RENTANG==='minggu'?'on':'')+'" onclick="pilihRentang(\'minggu\')">7 Hari</button>'
+     + '<button class="'+(RENTANG==='bulan'?'on':'')+'" onclick="pilihRentang(\'bulan\')">Bulan Ini</button>'
+     + '<input type="date" value="'+(RENTANG==='custom'?RENTANG_TGL:'')+'" '
+     +   'max="'+d.tanggal+'" onchange="pilihRentang(\'custom\',this.value)" title="Pilih tanggal">'
+     + '</div>';
+
+  var DR = _dataRentang(d, RENTANG, RENTANG_TGL);
+  var labelR = _labelRentang(RENTANG, RENTANG_TGL);
+
   h += '<div class="kpi">';
-  if (L.ada && d.hariIni){
-    h += kot('utama','Omzet hari ini', rp(d.hariIni.omzet),
-             d.hariIni.trx+' transaksi · laba kotor '+rp(d.hariIni.laba));
+  if (L.ada && DR) {
+    h += kot('utama', 'Omzet ' + labelR, rp(DR.omzet),
+             (DR.trx > 0 ? DR.trx : '—') + ' transaksi · laba kotor ' + rp(DR.laba));
   } else {
-    h += kot('utama','Omzet hari ini','—','Data Loka hari ini belum masuk');
+    h += kot('utama', 'Omzet ' + labelR, '—', L.ada ? 'Tidak ada data periode ini' : 'Data Loka belum masuk');
   }
   h += kot('','Uang di tangan', rp(d.uangDiTangan), 'kas kasir + brankas')
      + kot('','Barang keluar', rp(d.keluarHariIni.nilai),
@@ -1423,8 +1639,9 @@ function renderShift(){
        + '<div class="hint">Isi kalau setoran fisiknya <b>bukan hari ini</b> — misalnya '
        + 'uang baru masuk ATM besok pagi. Tanpa ini, rekonsiliasi dengan mutasi BRI '
        + 'akan menemukan selisih yang sebenarnya bukan selisih.</div></div>'
-       + '<div class="field" style="margin-bottom:0"><label>Nomor slip / referensi mutasi</label>'
-       + '<input id="s_ref" placeholder="Boleh kosong kalau belum ada"></div>'
+       + '<div class="field" style="margin-bottom:0">'
+       + '<label>No. referensi / slip setor tunai ATM <span id="ref_req" style="color:var(--merah);font-size:10px"></span></label>'
+       + '<input id="s_ref" placeholder="Salin dari struk ATM — wajib jika brankas perlu disetor" onchange="hitungShift()"></div>'
        + '</div>';
   }
 
@@ -1432,6 +1649,7 @@ function renderShift(){
      + barisFoto('struk','Struk ringkasan shift','wajib')
      + barisFoto('kaskasir','Uang di kas kasir','wajib')
      + barisFoto('kastunai','Uang di brankas','wajib')
+     + barisFoto('setor','Bukti setor — slip ATM / nota tunai','wajib jika brankas perlu disetor')
      + barisFoto('lain','Foto tambahan','boleh kosong')
      + '<div class="hint">Foto dikecilkan di HP dulu, lalu dikirim <b>sekali saja</b> '
      + 'saat Anda menekan Simpan — bukan satu per satu. Ini yang bikin tutup shift '
@@ -1567,11 +1785,27 @@ function hitungShift(){
          + 'Kalau memang ada sebabnya, tulis di kolom Catatan.')
     + '</div></div>';
 
+  // Update deposit requirement indicators
+  var wajibSetor = brankas > (d.batasBrankas || 2000000);
+  var refReq = el('ref_req');
+  if (refReq) refReq.textContent = wajibSetor ? '— WAJIB' : '';
+  var ftSetor = el('ft_setor');
+  if (ftSetor && wajibSetor && !FOTO_LOKAL.setor) {
+    ftSetor.className = 'foto wajib';
+  } else if (ftSetor && (!wajibSetor || FOTO_LOKAL.setor)) {
+    ftSetor.className = 'foto' + (FOTO_LOKAL.setor ? ' ada' : '');
+  }
+
   var kurang = [];
   if (!CEK.loka || !CEK.struk || !CEK.backup) kurang.push('centang prosedur');
   if (!FOTO_LOKAL.struk) kurang.push('foto struk');
   if (!FOTO_LOKAL.kaskasir) kurang.push('foto kas kasir');
   if (!FOTO_LOKAL.kastunai) kurang.push('foto brankas');
+  if (wajibSetor && !FOTO_LOKAL.setor) kurang.push('foto bukti setor');
+  if (wajibSetor) {
+    var refVal = el('s_ref') ? el('s_ref').value.trim() : '';
+    if (!refVal) kurang.push('no. referensi slip setor ATM');
+  }
   var ct = el('catatanS');
   if (!wajar && ct && !ct.value.trim()) kurang.push('catatan penjelasan selisih');
 

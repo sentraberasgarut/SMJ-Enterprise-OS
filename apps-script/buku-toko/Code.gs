@@ -1422,12 +1422,8 @@ function catatBeban(pin, payload) {
   if (!jenis) throw new Error('Jenis beban belum dipilih (Gaji/Sewa/Listrik/Transport/Susut/Lain).');
   if (!(nilai > 0)) throw new Error('Nilai beban harus lebih dari 0.');
 
-  var sh = _sheet(SpreadsheetApp.getActiveSpreadsheet(), 'BEBAN');
-  sh.appendRow([tgl, jenis, ket, nilai, o.nama]);
-  sh.getRange(sh.getLastRow(), 4).setNumberFormat('#,##0');
-  _catatAkses(o, 'CATAT BEBAN', jenis + ' · ' + _rp(nilai) + ' · ' + ket);
-
-  return { ok: true, jenis: jenis, nilai: nilai, nilaiRp: _rp(nilai), tanggal: tgl };
+  _catatAkses(o, 'CATAT BEBAN (DITOLAK)', 'Diarahkan ke Loka POS');
+  throw new Error('Beban dicatat di Loka POS sebagai Pengeluaran — tidak perlu dicatat manual di sini. Jalankan "Hitung Data Loka" dari Dashboard TSS untuk memperbarui angka beban.');
 }
 
 // ====================== PO MALAM SEDERHANA JAYA 4 ======================
@@ -1833,8 +1829,16 @@ function _olahLoka(D, namaFile) {
     if (String(p.nama).toLowerCase().indexOf('sederhana') === 0) sjOmzet += p.omzet;
   });
 
+  var bebanBulan = 0;
+  (D.Expense || []).forEach(function(e) {
+    var t = _tglDariMs(e.date);
+    if (t && t.slice(0, 7) === bulan) {
+      bebanBulan += _num(e.amount || e.value || e.total);
+    }
+  });
+
   return {
-    ada: true, nHari: nHari, margin: margin * 100, gmroi: gmroi, putaran: putaran,
+    ada: true, bebanBulan: bebanBulan, nHari: nHari, margin: margin * 100, gmroi: gmroi, putaran: putaran,
     dio: dio, dso: dso, siklusKas: dio + dso,
     stokMati: mati, nilaiStokMati: nilaiMati, kategori: kategori,
     konsentrasiSJ: totPel ? (sjOmzet / totPel * 100) : 0,
@@ -1873,16 +1877,11 @@ function _targetUnit(unit) {
  * bersih tidak bisa dihitung; yang kedua artinya laba bersih = laba kotor.
  */
 function _bebanBulan(bulan) {
-  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('BEBAN');
-  if (!sh) return 0;
-  var n = sh.getLastRow() - 1;
-  if (n <= 0) return 0;
-  var total = 0;
-  sh.getRange(2, 1, n, 4).getValues().forEach(function (r) {
-    if (_tglString(r[0]).slice(0, 7) !== bulan) return;
-    total += _num(r[3]);
-  });
-  return total;
+  var loka = _ringkasLoka();
+  if (loka.ada && typeof loka.bebanBulan !== 'undefined') {
+    return _num(loka.bebanBulan);
+  }
+  return 0;
 }
 
 /**
@@ -2361,6 +2360,20 @@ function simpanTutupShift(pin, payload) {
 
     var brankasAkhir = Number(d.KAS_TUNAI) || 0;
     var jenjang = _jenjangSetoran(brankasAkhir);
+
+    // Brankas perlu disetor: wajib ada no. referensi DAN foto bukti setor.
+    if (jenjang.wajibSetor) {
+      var refMutasi = String(payload.referensiMutasi || '').trim();
+      var fotoSetor = payload.foto && payload.foto.setor;
+      if (!refMutasi) {
+        throw new Error('Brankas ' + _rp(brankasAkhir) + ' perlu disetor. ' +
+          'Wajib isi nomor referensi / slip setor tunai ATM sebelum menyimpan.');
+      }
+      if (!fotoSetor) {
+        throw new Error('Brankas ' + _rp(brankasAkhir) + ' perlu disetor. ' +
+          'Lampirkan foto bukti setor (slip ATM / nota setor tunai) terlebih dahulu.');
+      }
+    }
 
     // Selisih besar wajib ada penjelasan saat itu, bukan nanti.
     if (Math.abs(selisih) > BATAS_SELISIH && !String(payload.catatan || '').trim()) {
