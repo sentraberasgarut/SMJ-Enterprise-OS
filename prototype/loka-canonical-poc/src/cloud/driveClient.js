@@ -176,6 +176,7 @@ async function uploadOrReplaceJson(drive, folderId, filename, jsonString) {
 
 module.exports = {
   driveFromEnv,
+  hasAnyCredentialSource,
   listSubfolders,
   listFilesBySuffix,
   listFilesNewestFirst,
