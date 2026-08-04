@@ -1,0 +1,46 @@
+{
+  "sourceSystem": "LOKA",
+  "sourceType": "dummy-export",
+  "fileName": "dummy-loka-2026-08-05.json",
+  "period": {
+    "start": "2026-08-05",
+    "end": "2026-08-05"
+  },
+  "products": [
+    { "id": "loka-prod-beras-001", "name": "Beras Ramos 5kg", "category": "Beras", "uom": "pack", "price": 72000 },
+    { "id": "loka-prod-minyak-001", "name": "Minyak Kita 1L", "category": "Minyak", "uom": "pcs", "price": 16000 }
+  ],
+  "customers": [
+    { "id": "loka-cust-sj4", "name": "Sederhana Jaya 4", "type": "branch" },
+    { "id": "loka-cust-walkin", "name": "Walk-in", "type": "retail" }
+  ],
+  "sales": [
+    {
+      "id": "loka-inv-001",
+      "date": "2026-08-05",
+      "customerId": "loka-cust-sj4",
+      "status": "PAID",
+      "items": [
+        { "productId": "loka-prod-beras-001", "name": "Beras Ramos 5kg", "quantity": 2, "uom": "pack", "unitPrice": 72000 }
+      ],
+      "payments": [
+        { "method": "cash", "amount": 144000 }
+      ]
+    },
+    {
+      "id": "loka-inv-002",
+      "date": "2026-08-05",
+      "customerId": "loka-cust-walkin",
+      "status": "PAID",
+      "items": [
+        { "productId": "loka-prod-unknown", "name": "Produk Belum Dipetakan", "quantity": 1, "uom": "pcs", "unitPrice": 10000 }
+      ],
+      "payments": [
+        { "method": "cash", "amount": 10000 }
+      ]
+    }
+  ],
+  "expenses": [
+    { "id": "loka-exp-001", "date": "2026-08-05", "name": "Plastik belanja", "amount": 25000 }
+  ]
+}

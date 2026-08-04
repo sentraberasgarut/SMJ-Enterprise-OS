@@ -1,0 +1,12 @@
+{
+  "name": "sjs-operational-data-hub-poc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-only dummy importer for SJS Operational Data Hub Phase 1.",
+  "main": "src/importer.js",
+  "scripts": {
+    "start": "node src/importer.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "license": "UNLICENSED"
+}
